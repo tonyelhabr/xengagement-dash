@@ -1,0 +1,109 @@
+---
+title: 'xGPhilosophy Tweet Engagement'
+output: 
+  flexdashboard::flex_dashboard:
+    css: style.css
+    social: menu
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=F, echo=F}
+knitr::opts_chunk$set(
+  # collapse = TRUE
+  warning = FALSE,
+  message = FALSE
+)
+
+library(tidyverse)
+library(plotly)
+library(crosstalk)
+
+source('functions.R')
+.f_import <- function(name) {
+  url(sprintf('https://raw.githubusercontent.com/tonyelhabr/xengagement/master/inst/extdata/%s.rds', name)) %>% readr::read_rds()
+}
+
+preds <- 
+  .f_import('preds') %>% 
+  mutate(
+    favorite_diff = favorite_pred - favorite_count
+  )
+shap <- .f_import('shap')
+preds_mini <- preds %>% select(idx, is_fresh, created_at, text)
+# preds_shared <- crosstalk::SharedData$new(preds)
+# shap_shared <- crosstalk::SharedData$new(shap)
+df <-
+  shap %>% 
+  inner_join(preds)
+
+df_key <-
+  df %>% 
+  plotly::highlight_key()
+df
+```
+
+```{r}
+preds_key <- preds %>% plotly::highlight_key()
+stem_filt <- 'favorite'
+p1 <-
+  preds_key %>% 
+  plot_ly(
+    showlegend = FALSE
+  ) %>% 
+  # add_trace(
+  #   x = ~created_at,
+  #   y = ~favorite_count,
+  #   name = 'Actual',
+  #   mode = 'markers',
+  #   type = 'scatter'
+  # ) %>% 
+  add_trace(
+    x = ~created_at,
+    y = ~favorite_count,
+    error_y = list(symmetric = FALSE, array = ~favorite_diff),
+    name = 'Actual',
+    mode = 'markers',
+    type = 'scatter'
+  )
+p1
+  add_trace(
+    x = ~created_at,
+    y = ~favorite_pred,
+    name = 'Predicted',
+    mode = 'markers',
+    type = 'scatter'
+  ) %>% 
+  plotly::config(
+    displaylogo = FALSE
+  ) %>% 
+  plotly::layout(
+    title = sprintf('Prediction Breakdown for %s', .upper1(stem_filt)),
+    font = list(
+      family = 'Karla',
+      size = 14
+    ),
+    xaxis = list(
+      title = 'tweet time'
+    ),
+    yaxis = list(title = '')
+  )
+p1
+```
+
+```{r}
+# plotly::highlight()
+# viz_shap <- plot_shap(
+#   df
+# )
+crosstalk::bscols(
+  # widths = c(3, NA, NA),
+  crosstalk::filter_select(
+    id = 'id',
+    label = 'Select a tweet',
+    df,
+    group = ~text
+  )
+  plotly::
+)
+```

@@ -37,14 +37,14 @@ df
 readr::write_rds(df, 'df.rds')
 }
 df <- readr::read_rds('df.rds')
-df
+
 df_long <-
   df %>% 
   select(-retweet_shap) %>% 
   unnest(favorite_shap)
 df_long
 df_long_key <- df %>% plotly::highlight_key(~text)
-preds_key <- preds %>% plotly::highlight_key( ~ text)
+# preds_key <- preds %>% plotly::highlight_key( ~ text)
 # shap_key <- shap %>% plotly::highlight_key(~text, group = 'Select a tweet')
 df_key <- df %>% plotly::highlight_key(~text)
 
@@ -60,19 +60,66 @@ plot_time <-
 plot_pred <-
   purrr::partial(
     plot_stem_pred,
-    data = preds_key,
-    height = 475,
-    width = 475,
-    ... =
-  )
-plot_shap <-
-  purrr::partial(
-    plot_stem_shap,
     data = df_key,
     height = 475,
     width = 475,
     ... =
   )
+# plot_shap <-
+#   purrr::partial(
+#     plot_stem_shap,
+#     data = df_key,
+#     height = 475,
+#     width = 475,
+#     ... =
+#   )
+```
+
+## Column {data-width="333"}
+
+### Favorite Prediction Explanation {data-height="500"}
+
+```{r}
+shap %>% 
+  ggplot() + 
+  aes(x = shap_value, y = lab, group = text) +
+  geom_col()
+# shap_key <- shap %>% group_by(text) %>% plotly::highlight_key()
+shap_key <- 
+  shap %>% 
+  filter(lab != 'Baseline') %>% 
+  plotly::highlight_key()
+
+# gg <- 
+#   shap_key %>% 
+#   ggplot() + 
+#   aes(x = shap_value, y = lab, group = text) +
+#   geom_col()
+
+gg <-
+  shap_key %>% 
+  plot_ly(
+    x = ~shap_value,
+    y = ~lab,
+    showlegend = FALSE
+  )
+
+# plot_shap <- crosstalk::bscols(
+#   htmltools::div(crosstalk::filter_select('id', 'Select a tweet', shap_key, ~text), style = htmltools::css(width = '100%')),
+#   htmltools::div(plotly::ggplotly(gg), style = htmltools::css(width = '100%'))
+# )
+
+crosstalk::bscols(
+  crosstalk::filter_select('id', 'Select a tweet', shap_key, ~text, multiple = FALSE),
+  gg
+)
+
+```
+
+### Retweets Prediction Explanation {data-height="500"}
+
+```{r}
+
 ```
 
 ## Column {data-width="333"}
@@ -113,72 +160,4 @@ plot_stem_pred(
   width = 475,
   stem = 'favorite'
 )
-```
-
-## Column {data-width="333"}
-
-### Favorite Prediction Explanation {data-height="500"}
-
-```{r}
-
-```
-
-### Retweets Prediction Explanation {data-height="500"}
-
-```{r}
-# library(listviewer)
-# s <- plotly::schema()
-# agg <- s$transforms$aggregate$attributes$aggregations$items$aggregation$func$values
-# 
-# 
-# l = list()
-# for (i in 1:length(agg)) {
-#   ll = list(method = "restyle",
-#             args = list('transforms[0].aggregations[0].func', agg[i]),
-#             label = agg[i]) 
-#   l[[i]] = ll
-# }
-# 
-# fig <- plot_ly(
-#     width = 400,
-#   height = 400,
-#   type = 'scatter',
-#   x = diamonds$cut,
-#   y = diamonds$price,
-#   mode = 'markers',
-#   marker = list(
-#     size = 10,
-#     color = 'blue',
-#     opacity = 0.8
-#   ),
-#   transforms = list(
-#     list(
-#       type = 'aggregate',
-#       groups = diamonds$cut,
-#       aggregations = list(
-#         list(
-#           target = 'y', func = 'avg', enabled = T
-#         )
-#       )
-#     )
-#   )
-# )
-# fig <- fig %>% layout(
-# 
-#     title = '<b>Plotly Aggregations</b><br>use dropdown to change aggregation',
-#     xaxis = list(title = 'Cut'),
-#     yaxis = list(title = 'Price ($)'),
-#     updatemenus = list(
-#       list(
-#         x = 0.25,
-#         y = 1.04,
-#         xref = 'paper',
-#         yref = 'paper',
-#         yanchor = 'top',
-#         buttons = l
-#       )
-#     )
-#   )
-# 
-# fig
 ```

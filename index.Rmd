@@ -3,107 +3,75 @@ title: 'xGPhilosophy Tweet Engagement'
 output: 
   flexdashboard::flex_dashboard:
     css: style.css
-    social: menu
     orientation: columns
-    vertical_layout: fill
+    vertical_layout: scroll
 ---
 
 ```{r setup, include=F, echo=F}
 knitr::opts_chunk$set(
   # collapse = TRUE
+  echo = FALSE,
   warning = FALSE,
   message = FALSE
 )
+```
 
-library(tidyverse)
-library(plotly)
-library(crosstalk)
-
+```{r import, include=F}
 source('functions.R')
-.f_import <- function(name) {
-  url(sprintf('https://raw.githubusercontent.com/tonyelhabr/xengagement/master/inst/extdata/%s.rds', name)) %>% readr::read_rds()
-}
+preds <- import_preds()
+# shap <- import_shap()
+# 
+# df <-
+#   shap %>% 
+#   nest(shap = -c(stem, idx, .pred)) %>% 
+#   select(idx, stem, shap) %>% 
+#   pivot_wider(names_from = stem, values_from = shap, names_glue = '{stem}_shap') %>% 
+#   left_join(preds)
+# df
 
-preds <- 
-  .f_import('preds') %>% 
-  mutate(
-    favorite_diff = favorite_pred - favorite_count
-  )
-shap <- .f_import('shap')
-preds_mini <- preds %>% select(idx, is_fresh, created_at, text)
-# preds_shared <- crosstalk::SharedData$new(preds)
-# shap_shared <- crosstalk::SharedData$new(shap)
-df <-
-  shap %>% 
-  inner_join(preds)
-
-df_key <-
-  df %>% 
-  plotly::highlight_key()
-df
+preds_key <- preds %>% plotly::highlight_key(~text)
+# df_key <- df %>% plotly::highlight_key(~text)
 ```
 
-```{r}
-preds_key <- preds %>% plotly::highlight_key()
-stem_filt <- 'favorite'
-p1 <-
-  preds_key %>% 
-  plot_ly(
-    showlegend = FALSE
-  ) %>% 
-  # add_trace(
-  #   x = ~created_at,
-  #   y = ~favorite_count,
-  #   name = 'Actual',
-  #   mode = 'markers',
-  #   type = 'scatter'
-  # ) %>% 
-  add_trace(
-    x = ~created_at,
-    y = ~favorite_count,
-    error_y = list(symmetric = FALSE, array = ~favorite_diff),
-    name = 'Actual',
-    mode = 'markers',
-    type = 'scatter'
-  )
-p1
-  add_trace(
-    x = ~created_at,
-    y = ~favorite_pred,
-    name = 'Predicted',
-    mode = 'markers',
-    type = 'scatter'
-  ) %>% 
-  plotly::config(
-    displaylogo = FALSE
-  ) %>% 
-  plotly::layout(
-    title = sprintf('Prediction Breakdown for %s', .upper1(stem_filt)),
-    font = list(
-      family = 'Karla',
-      size = 14
-    ),
-    xaxis = list(
-      title = 'tweet time'
-    ),
-    yaxis = list(title = '')
-  )
-p1
-```
+## Column {data-width="650"}
+
+### Favorites {data-height="600"}
 
 ```{r}
-# plotly::highlight()
-# viz_shap <- plot_shap(
-#   df
+favorite_subplots <- preds_key %>% plot_stem('favorite', height = 500, width = 1000)
+favorite_subplots
+```
+
+### Retweets {data-height="650"}
+
+```{r}
+retweet_subplots <- preds_key %>% plot_stem('retweet', height = 500, width = 1000)
+retweet_subplots
+# subplot(
+#   favorite_subplots,
+#   retweet_subplots,
+#   nrows = 2,
+#   margin = 0.04,
+#   shareX = FALSE,
+#   shareY = FALSE,
+#   titleX = TRUE,
+#   titleY = TRUE
 # )
-crosstalk::bscols(
-  # widths = c(3, NA, NA),
-  crosstalk::filter_select(
-    id = 'id',
-    label = 'Select a tweet',
-    df,
-    group = ~text
-  )
-  plotly::
-)
+```
+
+## Column {data-width="400"}
+
+### Favorites
+
+```{r}
+# HTML(
+#   '<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Liverpool (2.06) 0-1 (0.93) Burnley</p>&mdash; The xG Philosophy (@xGPhilosophy) <a href="https://twitter.com/xGPhilosophy/status/1352373660410146822?ref_src=twsrc%5Etfw">January 21, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>'
+# )
+# favorite_subplots
+```
+
+### Retweets
+
+```{r}
+# retweet_subplots
 ```

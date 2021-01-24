@@ -1,7 +1,10 @@
 body {
   font-family: 'Karla';
 }
-
+.section.sidebar {
+    top: 51px;
+    background-color: #003f5c;
+}
 /*
 Reference: 
 - https://rmarkdown.rstudio.com/flexdashboard/using.html#appearance

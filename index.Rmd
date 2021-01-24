@@ -2,7 +2,7 @@
 title: 'xGPhilosophy Tweet Engagement'
 output: 
   flexdashboard::flex_dashboard:
-    css: style.css
+    css: custom.css
     orientation: columns
     vertical_layout: scroll
 ---
@@ -19,59 +19,94 @@ knitr::opts_chunk$set(
 ```{r import, include=F}
 source('functions.R')
 preds <- import_preds()
-# shap <- import_shap()
-# 
-# df <-
-#   shap %>% 
-#   nest(shap = -c(stem, idx, .pred)) %>% 
-#   select(idx, stem, shap) %>% 
-#   pivot_wider(names_from = stem, values_from = shap, names_glue = '{stem}_shap') %>% 
-#   left_join(preds)
-# df
+shap <- import_shap()
 
-preds_key <- preds %>% plotly::highlight_key(~text)
-# df_key <- df %>% plotly::highlight_key(~text)
+preds_key <- preds %>% plotly::highlight_key( ~ text)
+shap_key <- 
+  shap %>% 
+  plotly::highlight_key()
+
+plot_time <-
+  purrr::partial(
+    plot_stem_time,
+    data = preds_key,
+    width = 475,
+    height = 475,
+    ... =
+  )
+plot_pred <-
+  purrr::partial(
+    plot_stem_pred,
+    data = preds_key,
+    height = 475,
+    width = 475,
+    ... =
+  )
+
 ```
 
-## Column {data-width="650"}
-
-### Favorites {data-height="600"}
+# Sidebar {.sidebar}
 
 ```{r}
-favorite_subplots <- preds_key %>% plot_stem('favorite', height = 500, width = 1000)
-favorite_subplots
+# shiny inputs defined here
 ```
 
-### Retweets {data-height="650"}
+This is a tool.
+
+# Prediction Explanation
+
+## Column {data-width="333"}
+
+### Favorite Prediction Explanation {data-height="500"}
 
 ```{r}
-retweet_subplots <- preds_key %>% plot_stem('retweet', height = 500, width = 1000)
-retweet_subplots
-# subplot(
-#   favorite_subplots,
-#   retweet_subplots,
-#   nrows = 2,
-#   margin = 0.04,
-#   shareX = FALSE,
-#   shareY = FALSE,
-#   titleX = TRUE,
-#   titleY = TRUE
-# )
+p <-
+  shap_key %>% 
+  plotly::plot_ly(
+    x = ~shap_value,
+    y = ~lab,
+    showlegend = FALSE
+  )
+crosstalk::bscols(
+  crosstalk::filter_select('id', 'Select a tweet', shap_key, ~text, multiple = FALSE),
+  p,
+  widths = c(12, 12)
+)
+
 ```
 
-## Column {data-width="400"}
-
-### Favorites
+### Retweets Prediction Explanation {data-height="500"}
 
 ```{r}
-# HTML(
-#   '<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Liverpool (2.06) 0-1 (0.93) Burnley</p>&mdash; The xG Philosophy (@xGPhilosophy) <a href="https://twitter.com/xGPhilosophy/status/1352373660410146822?ref_src=twsrc%5Etfw">January 21, 2021</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>'
-# )
-# favorite_subplots
+
 ```
 
-### Retweets
+# Data & Predictions {data-orientation="rows"}
+
+## Column {data-width="333"}
+
+### Favorites {data-height="333"}
 
 ```{r}
-# retweet_subplots
+plot_time('favorite')
+```
+
+### Retweets {data-height="333"}
+
+```{r}
+plot_time('retweet')
+```
+
+## Column {data-width="333"}
+
+### Favorite Predictions {data-height="500"}
+
+```{r}
+plot_pred('favorite')
+```
+
+### Retweet Predictions {data-height="500"}
+
+```{r}
+plot_pred('retweet')
 ```

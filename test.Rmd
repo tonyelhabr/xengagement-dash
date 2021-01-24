@@ -1,6 +1,5 @@
 ---
 title: 'xGPhilosophy Tweet Engagement'
-# runtime: shiny
 output: 
   flexdashboard::flex_dashboard:
     css: custom.css
@@ -22,37 +21,15 @@ source('functions.R')
 preds <- import_preds()
 shap <- import_shap()
 
-if(FALSE) {
-df <-
-  shap %>%
-  nest(shap = -c(stem, idx)) %>%
-  # head(5) %>% 
-  mutate(
-    shap = map(shap, .prep_shap)
-  ) %>% 
-  select(idx, stem, shap) %>%
-  pivot_wider(names_from = stem, values_from = shap, names_glue = '{stem}_shap') %>%
-  left_join(preds, by = 'idx')
-df
-readr::write_rds(df, 'df.rds')
-}
-df <- readr::read_rds('df.rds')
-
-df_long <-
-  df %>% 
-  select(-retweet_shap) %>% 
-  unnest(favorite_shap)
-df_long
-df_long_key <- df %>% plotly::highlight_key(~text)
-# preds_key <- preds %>% plotly::highlight_key( ~ text)
-# shap_key <- shap %>% plotly::highlight_key(~text, group = 'Select a tweet')
-df_key <- df %>% plotly::highlight_key(~text)
+preds_key <- preds %>% plotly::highlight_key( ~ text)
+shap_key <- 
+  shap %>% 
+  plotly::highlight_key()
 
 plot_time <-
   purrr::partial(
     plot_stem_time,
-    # data = preds_key,
-    data = df_key,
+    data = preds_key,
     width = 475,
     height = 475,
     ... =
@@ -60,58 +37,62 @@ plot_time <-
 plot_pred <-
   purrr::partial(
     plot_stem_pred,
-    data = df_key,
+    data = preds_key,
     height = 475,
     width = 475,
     ... =
   )
-# plot_shap <-
-#   purrr::partial(
-#     plot_stem_shap,
-#     data = df_key,
-#     height = 475,
-#     width = 475,
-#     ... =
-#   )
+
 ```
+
+# Sidebar {.sidebar}
+
+```{r}
+# shiny inputs defined here
+```
+
+This is a tool.
+
+# Prediction Explanation
 
 ## Column {data-width="333"}
 
 ### Favorite Prediction Explanation {data-height="500"}
 
 ```{r}
-shap %>% 
-  ggplot() + 
-  aes(x = shap_value, y = lab, group = text) +
-  geom_col()
-# shap_key <- shap %>% group_by(text) %>% plotly::highlight_key()
-shap_key <- 
-  shap %>% 
-  filter(lab != 'Baseline') %>% 
-  plotly::highlight_key()
-
-# gg <- 
-#   shap_key %>% 
-#   ggplot() + 
-#   aes(x = shap_value, y = lab, group = text) +
-#   geom_col()
-
-gg <-
+p <-
   shap_key %>% 
-  plot_ly(
-    x = ~shap_value,
-    y = ~lab,
-    showlegend = FALSE
-  )
-
-# plot_shap <- crosstalk::bscols(
-#   htmltools::div(crosstalk::filter_select('id', 'Select a tweet', shap_key, ~text), style = htmltools::css(width = '100%')),
-#   htmltools::div(plotly::ggplotly(gg), style = htmltools::css(width = '100%'))
-# )
-
+    plotly::plot_ly(
+      x = ~ shap_value,
+      y = ~ lab,
+      measure = ~measure,
+      type = 'bar',
+      orientation = 'h',
+      hovertemplate = paste('%{y}', '<br>SHAP value: %{x:.2f}<br>', '<extra></extra>'),
+      showlegend = FALSE,
+      ...
+    ) %>%
+    plotly::config(
+      displaylogo = FALSE
+    ) %>%
+    plotly::layout(
+      title = sprintf('Prediction Breakdown for %s', .upper1(stem)),
+      font = list(
+        family = 'Karla',
+        size = 14
+      ),
+      xaxis = list(
+        title = 'SHAP value',
+        x = 0,
+        y = 0,
+        zeroline = TRUE
+      ),
+      yaxis = list(title = '', type = 'category')
+    )
 crosstalk::bscols(
   crosstalk::filter_select('id', 'Select a tweet', shap_key, ~text, multiple = FALSE),
-  gg
+  p,
+  widths = c(12, 12)
 )
 
 ```
@@ -122,18 +103,20 @@ crosstalk::bscols(
 
 ```
 
+# Data & Predictions {data-orientation="rows"}
+
 ## Column {data-width="333"}
 
 ### Favorites {data-height="333"}
 
 ```{r}
-plot_time('favorite')
+
 ```
 
 ### Retweets {data-height="333"}
 
 ```{r}
-plot_time('retweet')
+
 ```
 
 ## Column {data-width="333"}
@@ -141,23 +124,11 @@ plot_time('retweet')
 ### Favorite Predictions {data-height="500"}
 
 ```{r}
-# plot_pred('favorite')
-plot_stem_pred2(
-  data = df_long_key,
-  height = 475,
-  width = 475,
-  stem = 'favorite'
-)
+
 ```
 
 ### Retweet Predictions {data-height="500"}
 
 ```{r}
-# plot_pred('retweet')
-plot_stem_pred(
-  data = df_long_key,
-  height = 475,
-  width = 475,
-  stem = 'favorite'
-)
+
 ```

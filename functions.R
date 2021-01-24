@@ -8,18 +8,19 @@ library(plotly)
 }
 
 import_preds <- memoise::memoise({function() {
-  .import_data('preds') %>% 
-    dplyr::mutate(
-      favorite_diff = favorite_pred - favorite_count,
-      retweet_diff = retweet_pred - retweet_count,
-      dplyr::across(text, ~sprintf('%s: %s (%.2f) %d-%d (%.2f) %s', lubridate::date(created_at), tm_h, xg_h, g_h, g_a, xg_a, tm_a))
-    )
+  .import_data('preds')
 }})
 
 import_shap <- memoise::memoise({function(preds = import_preds()) {
   shap_init <- .import_data('shap')
-  shap_init %>% 
-    dplyr::left_join(preds %>% dplyr::select(idx, text), by = 'idx')
+
+  shap <-
+    shap_init %>% 
+    dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~dplyr::coalesce(.x, 0))) %>% 
+    dplyr::left_join(preds %>% dplyr::select(idx, text), by = 'idx') %>% 
+    dplyr::filter(feature != 'baseline') %>% 
+    dplyr::mutate(across(text, ~forcats::fct_reorder(.x, dplyr::desc(.x))))
+  shap
 }})
 
 .upper1 <- function(x) {
@@ -28,128 +29,162 @@ import_shap <- memoise::memoise({function(preds = import_preds()) {
   x
 }
 
-.prep_shap <- function(data, .stem) {
-  # shap_filt <- data %>% dplyr::filter(stem == .stem)
-  shap_filt <- data
-  rnk_max <- 14L
+.plot_shap_subplot <- function(data, .stem) {
   
-  shap_baseline <-
-    shap_filt %>%
-    dplyr::filter(feature == 'baseline')
+  colors <- c('favorite' = '#003f5c', 'retweet' = '#ffa600')
+  colors <- c('favorite' = '##7a5195', 'retweet' = '#ef5675')
+  color <- unname(colors[stem])
   
-  shap_rnk_init <-
-    shap_filt %>%
-    dplyr::anti_join(
-      shap_baseline %>% dplyr::select(feature),
-      by = c('feature')
-    ) %>%
-    dplyr::mutate(
-      abs = shap_value %>% abs(),
-      rnk_init = dplyr::row_number(dplyr::desc(abs))
-    )
-  shap_rnk_init
-  
-  shap_features_small <-
-    shap_rnk_init %>%
-    dplyr::filter(rnk_init >= !!rnk_max) %>%
-    dplyr::mutate(rnk = !!rnk_max + 1L)
-  shap_features_small
-  
-  shap_rnk_init_nonagg <-
-    shap_rnk_init %>%
-    dplyr::anti_join(
-      shap_features_small %>%
-        dplyr::select(feature), by = c('feature')
-    ) %>%
-    dplyr::mutate(
-      temp = ifelse(shap_value < 0, min(shap_value) - shap_value, shap_value),
-      rnk = dplyr::row_number(dplyr::desc(temp)),
-    ) %>%
-    dplyr::select(-temp) %>%
-    dplyr::arrange(rnk)
-  shap_rnk_init_nonagg
-  
-  shap_first_neg <-
-    shap_rnk_init_nonagg %>%
-    dplyr::filter(shap_value < 0) %>%
-    dplyr::slice_min(rnk)
-  shap_first_neg
-  rnk_crossover <- shap_first_neg$rnk
-  
-  shap_rnk <-
-    list(
-      shap_baseline %>% dplyr::mutate(rnk = 0L),
-      shap_rnk_init_nonagg %>%
-        dplyr::mutate(
-          dplyr::across(rnk, ~ifelse(.x >= !!rnk_crossover, .x + 1, .x))
-        ),
-      shap_features_small
-    ) %>%
-    purrr::reduce(dplyr::bind_rows) %>%
-    dplyr::mutate(
-      dplyr::across(shap_value, ~dplyr::coalesce(.x, 0)),
-      dplyr::across(lab, ~ifelse(rnk > !!rnk_max, 'Other Features', .x))
-    ) %>%
-    tidyr::fill(.pred)
-  shap_rnk
-  
-  shap_rnk_agg <-
-    shap_rnk %>%
-    dplyr::group_by(.pred, rnk) %>%
-    dplyr::summarize(shap_value = sum(shap_value)) %>%
-    dplyr::ungroup() %>%
-    dplyr::left_join(
-      shap_rnk %>%
-        dplyr::distinct(lab, rnk),
-      by = c('rnk')
-    ) %>%
-    dplyr::mutate(
-      dplyr::across(lab, ~forcats::fct_reorder(.x, rnk)),
-      dplyr::across(shap_value, ~dplyr::case_when(rnk == 0L ~ 0, TRUE ~ .x)),
-      measure = 'relative'
-    ) %>% 
-    dplyr::arrange(rnk)
-  shap_rnk_agg
-}
-
-plot_stem_shap <- function(data, stem, ...) {
-
-  p <-
-    data %>%
+  base <-
+    data %>% 
     plotly::plot_ly(
-      x = ~ shap_value,
-      y = ~ lab,
-      measure = ~measure,
-      type = 'waterfall',
-      orientation = 'h',
-      name = 'SHAP values',
-      connector = list(
-        mode = 'between',
-        line = list(width = 4, color = 'rgb(0, 0, 0)', dash = 0)
-      ),
-      hovertemplate = paste('%{y}', '<br>SHAP value: %{x:.2f}<br>', '<extra></extra>'),
       showlegend = FALSE,
+      text = ~text,
+      color = I(color),
       ...
-    ) %>%
+    ) %>% 
     plotly::config(
       displaylogo = FALSE
-    ) %>%
+    ) %>% 
     plotly::layout(
-      title = sprintf('Prediction Breakdown for %s', .upper1(stem)),
+      autosize = TRUE,
+      # separators = ',.',
       font = list(
         family = 'Karla',
         size = 14
       ),
-      xaxis = list(
-        title = 'SHAP value',
-        x = 0,
-        y = 0,
-        zeroline = TRUE
-      ),
-      yaxis = list(title = '', type = 'category')
+      xaxis = list(title = ''),
+      yaxis = list(title = '', tickformat = ',.')
     )
-  p
+  base
 }
+
+plot_shap_subplots <- function(data) {
+  
+}
+
+# .prep_shap <- function(data, .stem) {
+#   # shap_filt <- data %>% dplyr::filter(stem == .stem)
+#   shap_filt <- data
+#   rnk_max <- 14L
+#   
+#   shap_baseline <-
+#     shap_filt %>%
+#     dplyr::filter(feature == 'baseline')
+#   
+#   shap_rnk_init <-
+#     shap_filt %>%
+#     dplyr::anti_join(
+#       shap_baseline %>% dplyr::select(feature),
+#       by = c('feature')
+#     ) %>%
+#     dplyr::mutate(
+#       abs = shap_value %>% abs(),
+#       rnk_init = dplyr::row_number(dplyr::desc(abs))
+#     )
+#   shap_rnk_init
+#   
+#   shap_features_small <-
+#     shap_rnk_init %>%
+#     dplyr::filter(rnk_init >= !!rnk_max) %>%
+#     dplyr::mutate(rnk = !!rnk_max + 1L)
+#   shap_features_small
+#   
+#   shap_rnk_init_nonagg <-
+#     shap_rnk_init %>%
+#     dplyr::anti_join(
+#       shap_features_small %>%
+#         dplyr::select(feature), by = c('feature')
+#     ) %>%
+#     dplyr::mutate(
+#       temp = ifelse(shap_value < 0, min(shap_value) - shap_value, shap_value),
+#       rnk = dplyr::row_number(dplyr::desc(temp)),
+#     ) %>%
+#     dplyr::select(-temp) %>%
+#     dplyr::arrange(rnk)
+#   shap_rnk_init_nonagg
+#   
+#   shap_first_neg <-
+#     shap_rnk_init_nonagg %>%
+#     dplyr::filter(shap_value < 0) %>%
+#     dplyr::slice_min(rnk)
+#   shap_first_neg
+#   rnk_crossover <- shap_first_neg$rnk
+#   
+#   shap_rnk <-
+#     list(
+#       shap_baseline %>% dplyr::mutate(rnk = 0L),
+#       shap_rnk_init_nonagg %>%
+#         dplyr::mutate(
+#           dplyr::across(rnk, ~ifelse(.x >= !!rnk_crossover, .x + 1, .x))
+#         ),
+#       shap_features_small
+#     ) %>%
+#     purrr::reduce(dplyr::bind_rows) %>%
+#     dplyr::mutate(
+#       dplyr::across(shap_value, ~dplyr::coalesce(.x, 0)),
+#       dplyr::across(lab, ~ifelse(rnk > !!rnk_max, 'Other Features', .x))
+#     ) %>%
+#     tidyr::fill(.pred)
+#   shap_rnk
+#   
+#   shap_rnk_agg <-
+#     shap_rnk %>%
+#     dplyr::group_by(.pred, rnk) %>%
+#     dplyr::summarize(shap_value = sum(shap_value)) %>%
+#     dplyr::ungroup() %>%
+#     dplyr::left_join(
+#       shap_rnk %>%
+#         dplyr::distinct(lab, rnk),
+#       by = c('rnk')
+#     ) %>%
+#     dplyr::mutate(
+#       dplyr::across(lab, ~forcats::fct_reorder(.x, rnk)),
+#       dplyr::across(shap_value, ~dplyr::case_when(rnk == 0L ~ 0, TRUE ~ .x)),
+#       measure = 'relative'
+#     ) %>% 
+#     dplyr::arrange(rnk)
+#   shap_rnk_agg
+# }
+# 
+# plot_stem_shap <- function(data, stem, ...) {
+# 
+#   p <-
+#     data %>%
+#     plotly::plot_ly(
+#       x = ~ shap_value,
+#       y = ~ lab,
+#       measure = ~measure,
+#       type = 'waterfall',
+#       orientation = 'h',
+#       name = 'SHAP values',
+#       connector = list(
+#         mode = 'between',
+#         line = list(width = 4, color = 'rgb(0, 0, 0)', dash = 0)
+#       ),
+#       hovertemplate = paste('%{y}', '<br>SHAP value: %{x:.2f}<br>', '<extra></extra>'),
+#       showlegend = FALSE,
+#       ...
+#     ) %>%
+#     plotly::config(
+#       displaylogo = FALSE
+#     ) %>%
+#     plotly::layout(
+#       title = sprintf('Prediction Breakdown for %s', .upper1(stem)),
+#       font = list(
+#         family = 'Karla',
+#         size = 14
+#       ),
+#       xaxis = list(
+#         title = 'SHAP value',
+#         x = 0,
+#         y = 0,
+#         zeroline = TRUE
+#       ),
+#       yaxis = list(title = '', type = 'category')
+#     )
+#   p
+# }
 
 .plot_stem_base <- function(data, stem, ...) {
   
@@ -252,7 +287,7 @@ plot_stem_pred <- function(data, stem, ...) {
 
 .plot_stem_base2 <- function(data, stem, ...) {
   
-  colors <- c('favorite' = '#003f5c', 'retweet' = '#ffa600')
+  colors <- c('favorite' = '#de425b', 'retweet' = '#488f31')
   color <- unname(colors[stem])
   
   base <-

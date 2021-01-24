@@ -18,95 +18,62 @@ knitr::opts_chunk$set(
 
 ```{r import, include=F}
 source('functions.R')
-preds <- import_preds()
-shap <- import_shap()
-
-preds_key <- preds %>% plotly::highlight_key( ~ text)
-shap_key <- 
-  shap %>% 
-  plotly::highlight_key()
-
-plot_time <-
-  purrr::partial(
-    plot_stem_time,
-    data = preds_key,
-    width = 475,
-    height = 475,
-    ... =
-  )
-plot_pred <-
-  purrr::partial(
-    plot_stem_pred,
-    data = preds_key,
-    height = 475,
-    width = 475,
-    ... =
-  )
-
 ```
 
-# Sidebar {.sidebar}
+# Home
 
-```{r}
-# shiny inputs defined here
+***Data & Predictions***
+
+**First column**: Number of favorites (blue) and retweets (orange) for [xGPhilosophy](https://twitter.com/xGPhilosophy)'s end-of-match xG summary tweets since the account started to make regular tweets around the beginning of 2020.
+
+*Example*:
+
+<blockquote class="twitter-tweet">
+
+<p lang="en" dir="ltr">
+
+Liverpool (1.56) 0-0 (1.23) Man Utd
+
+</p>
+
+--- The xG Philosophy (@xGPhilosophy) <a href="https://twitter.com/xGPhilosophy/status/1350871119784538114?ref_src=twsrc%5Etfw">January 17, 2021</a>
+
+</blockquote>
+
+```{=html}
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 ```
+**Second column**: Actual vs. predicted number of favorites and retweets.
 
-This is a tool.
+**Third column**: Percent rank of the difference between the actual and predicted number of favorites/retweets.
 
-# Prediction Explanation
+Taking the difference between the actual counts and the models' predictions gives us an "over expected" number quantifying how unexpected a given tweet's amount of engagement is. For example, a tweet that is predicted to receive 100 favorites and 10 retweets, but actually receives 200 favorites and 30 retweets tells us that the tweet received more attention than one might expect. This may tell us that the game was particularly interesting, perhaps due to something like a controversial, late-game VAR decision.
 
-## Column {data-width="333"}
+***Prediction Explanation***
 
-### Favorite Prediction Explanation {data-height="500"}
+**First row**: [SHAP](https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html) values for the prediction of a selected tweet. A positive SHAP value indicates that the feature contributed to making the prediction greater than the baseline (i.e. the average prediction).
 
-```{r}
-p <-
-  shap_key %>% 
-  plotly::plot_ly(
-    x = ~shap_value,
-    y = ~lab,
-    showlegend = FALSE
-  )
-crosstalk::bscols(
-  crosstalk::filter_select('id', 'Select a tweet', shap_key, ~text, multiple = FALSE),
-  p,
-  widths = c(12, 12)
-)
+The number of followers for the xGPhilosophy account at the time of the tweet is often the most important feature. For more recent tweets, it tends to be positive. This is expected given that what we are trying to predict (number of favorites/retweets) is highly correlated with the number of xGPhilosophy followers.
 
-```
+**Second row**: Aggregated SHAP values for the selected tweet. If the sum of positive and negative SHAP values is greater than 0, then the predicted number is greater than the average prediction.
 
-### Retweets Prediction Explanation {data-height="500"}
+More recent tweets are much more likely to have an aggregate positive SHAP value.
 
-```{r}
-
-```
+**Third row**: Like the actual vs. predicted plot on the ***Data & Predictions*** tab, but just for the selected tweet. This helps contextualize the SHAP value.
 
 # Data & Predictions {data-orientation="rows"}
 
-## Column {data-width="333"}
-
-### Favorites {data-height="333"}
+## Column
 
 ```{r}
-plot_time('favorite')
+do_plot_data_and_preds()
 ```
 
-### Retweets {data-height="333"}
+# Prediction Explanation {data-orientation="rows"}
+
+## Column
 
 ```{r}
-plot_time('retweet')
+do_plot_shap()
 ```
 
-## Column {data-width="333"}
-
-### Favorite Predictions {data-height="500"}
-
-```{r}
-plot_pred('favorite')
-```
-
-### Retweet Predictions {data-height="500"}
-
-```{r}
-plot_pred('retweet')
-```

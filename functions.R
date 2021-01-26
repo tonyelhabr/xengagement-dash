@@ -350,8 +350,9 @@ do_plot_shap <- function(w1 = 1500, h1 = 1000, w2 = w1, h2 = 500, w3 = w2, h3 = 
 
 do_plot_data_and_preds <- function(w1 = 1000, h1 = 600, w2 = w1, h2 = 300, w3 = w1, h3 = h2, ...) {
   w1 = 1400; h1 = 800; w2 = w1; h2 = h1; w3 = w1; h3 = h2
-  preds <- import_preds()
-  preds_key <- plotly::highlight_key(preds, ~text)
+  # preds <- import_preds()
+  # preds_key <- plotly::highlight_key(preds, ~text)
+  preds_key <- import_preds()
   p1 <- .plot_actual_over_time(preds_key, 'favorite', width = w1, height = h1)
   p2 <- .plot_actual_over_time(preds_key, 'retweet', width = w1, height = h1)
   p3 <- .plot_actual_v_pred(preds_key, 'favorite', width = w2, height = h2)

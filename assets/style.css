@@ -1,0 +1,33 @@
+body {
+  font-family: 'Karla', sans-serif;
+  margin: 0;
+  font-size: 12px;
+  background-color: #f7f7f7;
+}
+
+.header {
+  background-color: #003f5c;
+  /* height: 256px; */
+  display: flex;
+  flex-direction: column;
+  justify-content: left;
+}
+
+.header-title {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: bold;
+  text-align: left;
+  /* margin: 0 auto; */
+  margin-bottom: 10px;
+  margin-top: 10px;
+  margin-left: 10px;
+}
+
+.CalendarDay__selected_span,
+.CalendarDay__selected_span:active,
+.CalendarDay__selected_span:hover {
+  background: #003f5c;
+  border: 1px double #003f5c;
+  color: #fff;
+}

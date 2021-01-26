@@ -6,8 +6,16 @@ import datetime
 #%%
 shap = pd.read_csv('shap.csv')
 shap
+
 #%%
-preds = pd.read_csv('preds.csv')
+shap.columns
+#%%
+df = pd.read_csv('preds.csv')
+
+#%%
+df['lab_hover'] = df['tm_h'] + ' ' + df['g_h'].astype(str) + '-' + df[
+    'g_a'].astype(str) + ' ' + df['tm_a']
+df['lab_hover']
 #%%
 preds.sort_values('created_at', ascending=False, inplace=True)
 preds['date'] = pd.to_datetime(preds['created_at']).dt.date

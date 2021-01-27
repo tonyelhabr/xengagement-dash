@@ -1,17 +1,18 @@
 #%%
 import pandas as pd
 import numpy as np
-# from jupyter_dash import JupyterDash
 import datetime
 #%%
-shap = pd.read_csv('shap.csv')
-shap
+df = pd.read_csv('preds.csv')
+df.sort_values('created_at', ascending=False, inplace=True)
+df.columns
 
 #%%
 shap.columns
+shap.sort_values('favorite_shap_value', ascending=False)
 #%%
 df = pd.read_csv('preds.csv')
-
+df.lab_hover
 #%%
 df['lab_hover'] = df['tm_h'] + ' ' + df['g_h'].astype(str) + '-' + df[
     'g_a'].astype(str) + ' ' + df['tm_a']

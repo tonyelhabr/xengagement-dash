@@ -1,7 +1,7 @@
 body {
   font-family: 'Karla', sans-serif;
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   background-color: #f7f7f7;
 }
 
@@ -30,4 +30,9 @@ body {
   background: #003f5c;
   border: 1px double #003f5c;
   color: #fff;
+}
+
+a {
+  color: #003f5c;
+  font-weight: bold;
 }

@@ -1,5 +1,3 @@
 .Rproj.user
-run_code.sh
-run_server.bat
-*csv
 .vscode
+*pyc

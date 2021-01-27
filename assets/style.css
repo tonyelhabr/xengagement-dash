@@ -36,3 +36,7 @@ a {
   color: #003f5c;
   font-weight: bold;
 }
+
+p {
+  margin-top: 10px;
+}

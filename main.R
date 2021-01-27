@@ -2,7 +2,7 @@
 # setup ----
 # install.packages('remotes')
 # install.packages('pak')
-remotes::install_github('tonyelhabr/xengagement')
+# remotes::install_github('tonyelhabr/xengagement')
 # pak::pkg_install('tonyelhabr/xengagement')
 
 # suppressPackageStartupMessages({
@@ -16,6 +16,14 @@ remotes::install_github('tonyelhabr/xengagement')
 #   library(yardstick)
 # })
 
+token <- rtweet::create_token(
+  app =             Sys.getenv('TWITTER_APP'),
+  consumer_key =    Sys.getenv('TWITTER_CONSUMER_API_KEY'),
+  consumer_secret = Sys.getenv('TWITTER_CONSUMER_API_SECRET'),
+  access_token =    Sys.getenv('TWITTER_ACCESS_TOKEN'),
+  access_secret =   Sys.getenv('TWITTER_ACCESS_TOKEN_SECRET')
+)
+
 library(xengagement)
 options(xengagement.dir_data = 'data')
 dir_data <- xengagement::get_dir_data()
@@ -23,26 +31,49 @@ valid_stems <- xengagement::get_valid_stems()
 cols_lst <- xengagement::get_cols_lst(valid_stems[1]) # Doesn't matter what the target variable is.
 
 # data refresh ----
-.f_transform <- function() {
-  tweets <- xengagement:::retrieve_tweets(method = 'new')
-  tweets %>% xengagement:::transform_tweets(train = FALSE)
+tweets <- xengagement:::retrieve_tweets(method = 'new', export = FALSE, append = FALSE, token = token)
+is_null <- is.null(tweets)
+if(is_null) {
+  stop(sprintf('0 new tweet found at %s!', Sys.time()), call. = FALSE)
 }
+n_tweet <- nrow(tweets)
+cat(sprintf('%d new tweet%s found at %s!', n_tweet, ifelse(n_tweet > 1L, 's', ''), Sys.time()))
 
-tweets_transformed <-
-  xengagement:::do_get(
-    f = .f_transform,
-    path = file.path(dir_data, 'tweets_transformed.parquet'),
-    f_import = arrow::read_parquet,
-    f_export = arrow::write_parquet,
-    overwrite = TRUE,
-    export = TRUE
+# .f_transform <- function() {
+#   tweets <- xengagement:::retrieve_tweets(method = 'since', export = TRUE, append = TRUE, token = token)
+#   tweets_transformed <- tweets %>% xengagement:::transform_tweets(train = FALSE)
+#   cat(sprintf('Reduced %s tweets to %s after transformation.', nrow(tweets), nrow(tweets_transformed)))
+#   tweets_transformed
+# }
+# 
+# tweets_transformed <-
+#   xengagement:::do_get(
+#     f = .f_transform,
+#     path = file.path(dir_data, 'tweets_transformed.rds'),
+#     f_import = readr::read_rds,
+#     f_export = readr::write_rds,
+#     overwrite = TRUE,
+#     export = TRUE
+#   )
+# tweets_transformed
+
+
+tweets <-
+  xengagement:::retrieve_tweets(
+    tweets = tweets,
+    method = 'none',
+    export = TRUE,
+    append = TRUE,
+    token = token
   )
+tweets_transformed <- tweets %>% xengagement:::transform_tweets(train = FALSE)
+cat(sprintf('Reduced %s tweets to %s after transformation.', nrow(tweets), nrow(tweets_transformed)))
 tweets_transformed
 
 res_preds <-
   dplyr::tibble(
     stem = valid_stems,
-    fit = list(xengagement::fit_favorites, xengagement::fit_retweets)
+    fit = list(xengagement::fit_favorite, xengagement::fit_retweet)
   ) %>% 
   dplyr::mutate(
     res = purrr::map2(
@@ -57,84 +88,29 @@ res_preds <-
   )
 res_preds
 
-# dashboard predp ---
-.path_data_csv <- purrr::partial(xengagement:::.path_data, ext = 'csv', ... = )
-
-# shap export ----
-# Maybe this should be exported tweets_transformed (with `usethis::use_data()`)?
-cols_x <- 
-  dplyr::tibble(
-    lab = c(cols_lst$cols_x_names, 'Baseline'),
-    feature = c(cols_lst$cols_x, 'baseline')
-  )
-cols_x
-
-tweets_transformed <- file.path(dir_data, 'tweets_transformed.parquet') %>% arrow::read_parquet()
-tweets_transformed
-
-tweets_rescaled_long <-
-  tweets_transformed %>% 
-  dplyr::select(
-    dplyr::all_of(cols_lst$cols_id),
-    dplyr::any_of(cols_lst$cols_x)
-  ) %>% 
-  as.data.frame() %>% 
-  dplyr::mutate(dplyr::across(-idx, scales::rescale)) %>% 
-  tidyr::gather(
-    'feature',
-    'value',
-    -c(idx)
-  ) %>% 
-  dplyr::as_tibble()
-tweets_rescaled_long
-
-.f_import_shap <- function(stem) {
-  path <- file.path(dir_data, sprintf('shap_%s.parquet', stem))
-  shap <- path %>% arrow::read_parquet()
-  shap_long <-
-    shap %>%
-    tidyr::pivot_longer(
-      -c(idx, .pred, .actual),
-      names_to = 'feature',
-      values_to = 'shap_value'
-    ) %>%
-    dplyr::mutate(sign = dplyr::if_else(shap_value < 0, 'neg', 'pos') %>% factor())
-  shap_long
-  
-  res <-
-    shap_long %>% 
-    dplyr::full_join(
-      tweets_rescaled_long, by = c('idx', 'feature')
-    ) %>% 
-    dplyr::left_join(cols_x, by = c('feature'))
-  res
+# dashboard prep ---
+.path_x <- function(dir, file = tempfile(), ext = NULL) {
+  if(!is.null(ext)) {
+    ext <- sprintf('.%s', ext)
+  } else {
+    ext <- ''
+  }
+  file.path(dir, sprintf('%s%s', file, ext))
 }
 
-shap <-
-  valid_stems %>%
-  setNames(., .) %>% 
-  purrr::map_dfr(.f_import_shap, .id = 'stem') %>% 
-  dplyr::rename(pred = .pred, count = .actual) %>% 
-  tidyr::pivot_wider(
-    names_from = stem,
-    values_from = c(pred, count, sign, shap_value),
-    names_glue = '{stem}_{.value}'
-  ) %>% 
-  dplyr::mutate(dplyr::across(where(is.numeric), ~dplyr::coalesce(.x, 0))) %>% 
-  dplyr::left_join(preds %>% dplyr::select(idx, text), by = 'idx') %>% 
-  dplyr::filter(feature != 'baseline') %>% 
-  dplyr::mutate(dplyr::across(text, ~forcats::fct_reorder(.x, dplyr::desc(.x)))) %>% 
-  dplyr::arrange(idx, feature)
-shap
-readr::write_csv(shap, .path_data_csv(file = 'shap'))
+.path_data <- function(dir = get_dir_data(), ...) {
+  .path_x(dir = dir, ...)
+}
+.path_data_csv <- purrr::partial(.path_data, ext = 'csv', ... = )
+
 
 # preds export ----
 .f_import_preds <- function(stem) {
-  path <- file.path(dir_data, sprintf('preds_%s.parquet', stem))
+  path <- file.path(dir_data, sprintf('preds_%s.rds', stem))
   col_res_sym <- sprintf('%s_diff', stem) %>% dplyr::sym()
   res <- 
     path %>% 
-    arrow::read_parquet() %>% 
+    readr::read_rds() %>% 
     dplyr::rename_with(~sprintf('%s_pred', stem), .cols = c(.pred)) %>% 
     dplyr::select(-dplyr::matches('_log$')) %>% 
     dplyr::mutate(
@@ -150,7 +126,7 @@ readr::write_csv(shap, .path_data_csv(file = 'shap'))
 }
 
 suppressMessages(
-  preds <-
+  preds_init <-
     valid_stems %>%
     purrr::map(.f_import_preds) %>%
     purrr::reduce(dplyr::full_join) %>%
@@ -160,8 +136,8 @@ suppressMessages(
       dplyr::matches('^(favorite|retweet)_')
     )
 )
-preds <-
-  preds %>% 
+preds_init <-
+  preds_init %>% 
   dplyr::mutate(
     favorite_diff = favorite_count - favorite_pred,
     retweet_diff = retweet_count - retweet_pred,
@@ -193,40 +169,43 @@ preds <-
       )
   ) %>% 
   dplyr::arrange(idx)
-preds
-# readr::write_csv(preds, .path_data_csv(file = 'preds'))
+preds_init
 
-# TODO
-mape_favorite <-
-  preds %>% 
-  yardstick::mape(favorite_pred, favorite_count)
-
-mape_retweet <-
-  preds %>% 
-  yardstick::mape(retweet_pred, retweet_count)
-
-mapes <- mape_favorite$.estimate + mape_retweet$.estimate
-# Yes, flip the weights so that the more accurate one gets higher weighting
-wt_favorite <- mape_retweet$.estimate / mapes
-wt_retweet <- mape_favorite$.estimate / mapes
-
-# # Need the actual ranges? Or can use pranks of differences
-preds_agg <-
-  preds %>%
+mapes <-
+  preds_init %>% 
+  dplyr::filter(retweet_count > 0) %>% 
   dplyr::summarize(
-    dplyr::across(dplyr::matches('^(favorite|retweet)_(count)$'), range)
-  ) %>%
+    mape_favorite = mean(abs((favorite_count - favorite_pred) / favorite_count), na.rm = TRUE),
+    mape_retweet = mean(abs((retweet_count - retweet_pred) / retweet_count), na.rm = TRUE)
+  ) %>% 
   dplyr::mutate(
-    idx = dplyr::row_number(),
-    stat = dplyr::if_else(idx == 1L, 'min', 'max')
-  ) %>%
-  dplyr::select(-idx)
-preds_agg
+    mapes = mape_favorite + mape_retweet,
+    wt_favorite = mape_retweet / mapes,
+    wt_retweet = mape_favorite / mapes
+  )
+mapes
+wt_favorite <- mapes$wt_favorite
+wt_retweet <- mapes$wt_retweet
+
+# preds_agg <-
+#   preds_init %>%
+#   dplyr::summarize(
+#     dplyr::across(dplyr::matches('^(favorite|retweet)_(count)$'), range)
+#   ) %>%
+#   dplyr::mutate(
+#     idx = dplyr::row_number(),
+#     stat = dplyr::if_else(idx == 1L, 'min', 'max')
+#   ) %>%
+#   dplyr::select(-idx)
+# preds_agg
 
 preds_agg <-
-  preds %>%
+  preds_init %>%
   dplyr::summarize(
-    dplyr::across(dplyr::matches('^(favorite|retweet)_(count)$'), list(min = min, max = max))
+    dplyr::across(
+      dplyr::matches('^(favorite|retweet)_(count)$'),
+      list(min = min, max = max)
+    )
   )
 preds_agg
 
@@ -238,9 +217,9 @@ scaling_factor <-
   dplyr::pull(z)
 scaling_factor
 
-res <-
-  preds %>%
-  # TODO: This is just an approximation for now. Should actually use a re-scaling function (with `preds_agg`).
+preds_init %>% dplyr::relocate(matches('_prnk$'))
+preds <-
+  preds_init %>%
   dplyr::mutate(
     retweet_diff_scaled = !!scaling_factor * retweet_diff
   ) %>%
@@ -251,5 +230,77 @@ res <-
   ) %>%
   dplyr::select(-dplyr::matches('_scaled$')) %>% 
   dplyr::arrange(total_diff_rnk)
-res %>% dplyr::select(total_diff_prnk, total_diff, text, tm_h, tm_a) %>% dplyr::arrange(total_diff_prnk)
-readr::write_csv(res, file.path(dir_data, 'preds.csv'), na = '')
+# preds %>% dplyr::select(total_diff_prnk, total_diff, text, tm_h, tm_a) %>% dplyr::arrange(total_diff_prnk)
+readr::write_csv(preds, file.path(dir_data, 'preds.csv'), na = '')
+
+# shap export ----
+# Maybe this should be exported tweets_transformed (with `usethis::use_data()`)?
+cols_x <- 
+  dplyr::tibble(
+    lab = c(cols_lst$cols_x_names, 'Baseline'),
+    feature = c(cols_lst$cols_x, 'baseline')
+  )
+cols_x
+
+# tweets_transformed <- file.path(dir_data, 'tweets_transformed.rds') %>% readr::read_rds()
+# tweets_transformed
+
+tweets_rescaled_long <-
+  tweets_transformed %>% 
+  dplyr::select(
+    dplyr::all_of(cols_lst$cols_id),
+    dplyr::any_of(cols_lst$cols_x)
+  ) %>% 
+  as.data.frame() %>% 
+  dplyr::mutate(dplyr::across(-idx, scales::rescale)) %>% 
+  tidyr::gather(
+    'feature',
+    'value',
+    -c(idx)
+  ) %>% 
+  dplyr::as_tibble()
+tweets_rescaled_long
+
+.f_import_shap <- function(stem) {
+  path <- file.path(dir_data, sprintf('shap_%s.rds', stem))
+  shap <- path %>% readr::read_rds()
+  shap_long <-
+    shap %>%
+    tidyr::pivot_longer(
+      -c(idx, .pred, .actual),
+      names_to = 'feature',
+      values_to = 'shap_value'
+    ) %>%
+    dplyr::mutate(sign = dplyr::if_else(shap_value < 0, 'neg', 'pos') %>% factor())
+  shap_long
+  
+  res <-
+    shap_long %>% 
+    dplyr::full_join(
+      tweets_rescaled_long, by = c('idx', 'feature')
+    ) %>% 
+    dplyr::left_join(cols_x, by = c('feature'))
+  res
+}
+
+shap <-
+  valid_stems %>%
+  setNames(., .) %>% 
+  purrr::map_dfr(.f_import_shap, .id = 'stem') %>% 
+  dplyr::rename(pred = .pred, count = .actual) %>% 
+  dplyr::mutate(dplyr::across(sign, as.character)) %>% 
+  tidyr::pivot_wider(
+    names_from = stem,
+    values_from = c(pred, count, sign, shap_value),
+    names_glue = '{stem}_{.value}',
+    values_fill = list(pred = 0, count = 0, sign = 'neutral', shap_value = 0)
+  ) %>% 
+  # dplyr::mutate(dplyr::across(where(is.numeric), ~dplyr::coalesce(.x, 0))) %>% 
+  dplyr::left_join(preds %>% dplyr::select(idx, text), by = 'idx') %>% 
+  dplyr::filter(feature != 'baseline') %>% 
+  # dplyr::mutate(dplyr::across(text, ~forcats::fct_reorder(.x, dplyr::desc(.x)))) %>% 
+  dplyr::arrange(idx, feature)
+shap
+readr::write_csv(shap, .path_data_csv(file = 'shap'))
+
+cat(sprintf('Successfully completed update', Sys.time()))

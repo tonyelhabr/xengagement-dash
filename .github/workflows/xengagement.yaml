@@ -1,13 +1,14 @@
-name: londonmapbot
+name: xengagement
 
 on:
-  schedule:
-    - cron: '0,10 * * * *'  # every hour
+  schedule:s
+    - cron: '0,10 * * * *'
 
 jobs:
   londonmapbot-post:
     runs-on: macOS-latest
     env:
+      TWITTER_APP: ${{ secrets.TWITTER_APP }}
       TWITTER_CONSUMER_API_KEY: ${{ secrets.TWITTER_CONSUMER_API_KEY }}
       TWITTER_CONSUMER_API_SECRET: ${{ secrets.TWITTER_CONSUMER_API_SECRET }}
       TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
@@ -18,8 +19,8 @@ jobs:
       - name: Install packages
         run: |
           install.packages('remotes')
-          remotes::install_github('tonyelhabr/xengagement')
-          install.packages(c('dplyr', 'forcats', 'tidyr', 'purrr', 'arrow', 'readr', 'yardstick'))
+          remotes::install_github('tonyelhabr/xengagement', dependencies = TRUE, force = FALSE)
+          install.packages(c('dplyr', 'tidyr', 'purrr', 'readr'))
         shell: Rscript {0}
          
       - name: Update data

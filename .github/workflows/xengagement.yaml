@@ -19,12 +19,13 @@ jobs:
       - name: Install packages
         run: |
           install.packages('remotes')
-          remotes::install_github('tonyelhabr/xengagement', dependencies = TRUE, force = FALSE)
+          # remotes::install_github(c('rstudio/webshot2')
+          remotes::install_github('tonyelhabr/xengagement'), dependencies = TRUE, force = FALSE)
           install.packages(c('dplyr', 'tidyr', 'purrr', 'readr'))
         shell: Rscript {0}
          
       - name: Update data
-        run: Rscript main.R
+        run: Rscript updatet.R
         
       - name: Commit results
         run: |

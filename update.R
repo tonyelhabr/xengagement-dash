@@ -220,7 +220,7 @@ if(is_null) {
   
   res_screenshot <-
     preds %>% 
-    xengagement::screenshot_latest_tweet()
+    xengagement::screenshot_latest_tweet(dir = 'assets')
   
   res_generate <-
     preds %>%

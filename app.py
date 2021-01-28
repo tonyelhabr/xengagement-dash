@@ -13,6 +13,8 @@ import pandas as pd
 pd.options.mode.chained_assignment = None
 from utils.leaderboard import generate_leaderboard_tab
 from utils.about import generate_about_tab
+from utils.io import import_shap, import_preds
+from utils.dash_helpers import col_graph_wrapper
 
 external_stylesheets = [
     {
@@ -22,19 +24,6 @@ external_stylesheets = [
         'rel': 'stylesheet',
     }, dbc.themes.BOOTSTRAP
 ]
-
-
-def import_shap():
-    return pd.read_csv('data/shap.csv')
-
-
-def import_preds():
-    preds = pd.read_csv('data/preds.csv')
-    preds.sort_values('created_at', ascending=False, inplace=True)
-    preds['date'] = pd.to_datetime(preds['created_at']).dt.date
-    preds['total_diff_prnk'] = preds['total_diff_prnk'] * 100
-    return preds
-
 
 shap = import_shap()
 preds = import_preds()
@@ -57,20 +46,6 @@ min_date = datetime.date(2020, 1, 1)
 max_date = datetime.date.today()
 init_date = datetime.date(2020, 6, 1)
 
-
-def _graph_wrapper(id):
-    return dcc.Graph(
-        id=id,
-        config={
-            'displayModeBar': True,
-            'displaylogo': False,
-            'modeBarButtonsToRemove': ['lasso2d']
-        }
-    )
-
-
-def col_graph_wrapper(id):
-    return dbc.Col([_graph_wrapper(id)], width=12, lg=6)
 
 
 # if local:

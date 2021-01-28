@@ -40,3 +40,27 @@ a {
 p {
   margin-top: 10px;
 }
+
+.dash-table-container
+  .dash-spreadsheet-container
+  .dash-spreadsheet-inner
+  table {
+  border-collapse: collapse;
+  /*font-family: monospacef;*/
+  font-family: 'Karla', sans-serif;
+  --accent: #ffa600;
+  --border: lightgrey;
+  --text-color: #3c3c3c;
+  --hover: #fdfdfd;
+  --background-color-ellipses: #fdfdfd;
+  --faded-text: #fafafa;
+  --faded-text-header: #b4b4b4;
+  --selected-background: rgba(255, 65, 54, 0.2);
+  --faded-dropdown: #f0f0f0;
+  --muted: #c8c8c8;
+}
+
+.dash-table-container .previous-next-container .page-number {
+  /* font-family: monospace; */
+  display: inline-block;
+}

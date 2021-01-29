@@ -3,9 +3,10 @@ import pandas as pd
 import numpy as np
 import datetime
 #%%
-df = pd.read_csv('preds.csv')
+df = pd.read_csv('data/preds.csv')
 df.sort_values('created_at', ascending=False, inplace=True)
-df.columns
+df['link'] = '[Tweet](https://twitter.com/xGPhilosophy/status/' + df['status_id'].astype(str) + ')'
+df['link']
 
 #%%
 shap.columns

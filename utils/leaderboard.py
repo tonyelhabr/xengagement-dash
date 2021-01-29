@@ -6,9 +6,17 @@ import dash_bootstrap_components as dbc
 def _generate_leaderboard(df):
     # df['total_diff_prnk'] = df['total_diff_prnk'].map('{:,.1f}%'.format)
     df_sort = df.sort_values('total_diff_prnk', ascending=False)
-
+    df.sort_values('created_at', ascending=False, inplace=True)
+    df_sort['link'] = (
+        '[Tweet](https://twitter.com/xGPhilosophy/status/' +
+        df_sort['status_id'].astype(str) + ')'
+    )
     cols_table = [
         {
+            'name': ['', 'Link'],
+            'id': 'link',
+            'presentation': 'markdown'
+        }, {
             'name': ['', 'Date'],
             'id': 'date',
             'type': 'datetime'
@@ -17,7 +25,7 @@ def _generate_leaderboard(df):
             'id': 'tm_h',
             'type': 'text'
         }, {
-            'name': ['Home', 'Goals'],
+            'name': ['Home', 'G'],
             'id': 'g_h',
             'type': 'numeric'
         }, {
@@ -29,7 +37,7 @@ def _generate_leaderboard(df):
             'id': 'tm_a',
             'type': 'text'
         }, {
-            'name': ['Away', 'Goals'],
+            'name': ['Away', 'G'],
             'id': 'g_a',
             'type': 'numeric'
         }, {
@@ -65,7 +73,7 @@ def _generate_leaderboard(df):
                 'specifier': ',.0f'
             }
         }, {
-            'name': ['', 'EOE Percentile'],
+            'name': ['', 'EOE'],
             'id': 'total_diff_prnk',
             'type': 'numeric',
             'format': {
@@ -88,7 +96,7 @@ def _generate_leaderboard(df):
         sort_mode='single',
         # column_selectable='single',
         merge_duplicate_headers=True,
-        page_action='native',
+        # page_action='native',
         page_current=0,
         page_size=20,
     )

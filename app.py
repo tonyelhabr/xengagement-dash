@@ -5,6 +5,7 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_defer_js_import as dji
 import plotly.express as px
 import plotly.graph_objects as go
 from dash.dependencies import Output, Input
@@ -46,99 +47,137 @@ min_date = datetime.date(2020, 1, 1)
 max_date = datetime.date.today()
 init_date = datetime.date(2020, 6, 1)
 
-
-
-# if local:
-#     app = JupyterDash(__name__, external_stylesheets=external_stylesheets)
-# else:
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-#     server = app.server  # prod
+# server = app.server  # prod
 app.title = 'xGPhilosophy\'s xEngagement'
 
-app.layout = dbc.Container(
-    fluid=False,
-    style={'margin': 'auto'},
-    children=[
-        html.Div(
-            html.H3(
-                children='xGPhilosophy\'s Expected Engagment (xEngagement)',
-                className='header-title'
-            ),
-            className='header'
-        ),
-        html.Hr(),
-        dbc.Row(
+app.index_string = """
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            <script type="text/x-mathjax-config">
+            MathJax.Hub.Config({
+                tex2jax: {
+                inlineMath: [ ['$','$'],],
+                processEscapes: true
+                }
+            });
+            </script>
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+"""
+
+mathjax_script = dji.Import(
+    src=
+    "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_SVG"
+)
+
+app.layout = html.Div(
+    [
+        dbc.Container(
             [
-                dbc.Col(
-                    [
-                        html.Div(children='Date Range', className='menu-title'),
-                        dcc.DatePickerRange(
-                            id='date-filter',
-                            # style={'background': COLORS['blue']},
-                            min_date_allowed=min_date,
-                            max_date_allowed=max_date,
-                            start_date=init_date,
-                            end_date=max_date
-                        ),
-                    ],
-                    width=12,
-                    lg=4
+                html.Div(
+                    html.H3(
+                        children=
+                        'xGPhilosophy\'s Expected Engagment (xEngagement)',
+                        className='header-title'
+                    ),
+                    className='header'
                 ),
-                dbc.Col(
+                html.Hr(),
+                dbc.Row(
                     [
-                        html.Div(
-                            children='Select a Tweet to Emphasize',
-                            className='menu-title'
+                        dbc.Col(
+                            [
+                                html.Div(
+                                    children='Date Range',
+                                    className='menu-title'
+                                ),
+                                dcc.DatePickerRange(
+                                    id='date-filter',
+                                    # style={'background': COLORS['blue']},
+                                    min_date_allowed=min_date,
+                                    max_date_allowed=max_date,
+                                    start_date=init_date,
+                                    end_date=max_date
+                                ),
+                            ],
+                            width=12,
+                            lg=4
                         ),
-                        dcc.Dropdown(
-                            id='text-filter',
-                            value=initial_text,
-                            clearable=True,
-                            className='dropdown',
+                        dbc.Col(
+                            [
+                                html.Div(
+                                    children='Select a Tweet to Emphasize',
+                                    className='menu-title'
+                                ),
+                                dcc.Dropdown(
+                                    id='text-filter',
+                                    value=initial_text,
+                                    clearable=True,
+                                    className='dropdown',
+                                ),
+                            ],
+                            width=12,
+                            lg=8
+                        )
+                    ]
+                ),
+                html.Hr(),
+                dbc.Tabs(
+                    id='tabs',
+                    children=[
+                        generate_about_tab(),
+                        dbc.Tab(
+                            label='Data & Predictions',
+                            tab_id='data-and-preds',
+                            children=[
+                                dbc.Row(
+                                    [
+                                        col_graph_wrapper(
+                                            'favorites-over-time'
+                                        ),
+                                        col_graph_wrapper('retweets-over-time'),
+                                    ]
+                                ),
+                                dbc.Row(
+                                    [
+                                        col_graph_wrapper('favorites-v-pred'),
+                                        col_graph_wrapper('retweets-v-pred'),
+                                    ]
+                                )
+                            ]
                         ),
-                    ],
-                    width=12,
-                    lg=8
+                        dbc.Tab(
+                            label='Prediction Explanation',
+                            tab_id='shap',
+                            children=[
+                                dbc.Row(
+                                    [
+                                        col_graph_wrapper('favorites-shap'),
+                                        col_graph_wrapper('retweets-shap'),
+                                    ]
+                                )
+                            ]
+                        ), leaderboard_tab
+                    ]
                 )
-            ]
+            ],
+            fluid=False,
         ),
-        html.Hr(),
-        dbc.Tabs(
-            id='tabs',
-            children=[
-                generate_about_tab(),
-                dbc.Tab(
-                    label='Data & Predictions',
-                    tab_id='data-and-preds',
-                    children=[
-                        dbc.Row(
-                            [
-                                col_graph_wrapper('favorites-over-time'),
-                                col_graph_wrapper('retweets-over-time'),
-                            ]
-                        ),
-                        dbc.Row(
-                            [
-                                col_graph_wrapper('favorites-v-pred'),
-                                col_graph_wrapper('retweets-v-pred'),
-                            ]
-                        )
-                    ]
-                ),
-                dbc.Tab(
-                    label='Prediction Explanation',
-                    tab_id='shap',
-                    children=[
-                        dbc.Row(
-                            [
-                                col_graph_wrapper('favorites-shap'),
-                                col_graph_wrapper('retweets-shap'),
-                            ]
-                        )
-                    ]
-                ), leaderboard_tab
-            ]
-        )
+        mathjax_script
     ]
 )
 

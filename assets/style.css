@@ -46,7 +46,6 @@ p {
   .dash-spreadsheet-inner
   table {
   border-collapse: collapse;
-  /*font-family: monospacef;*/
   font-family: 'Karla', sans-serif;
   --accent: #ffa600;
   --border: lightgrey;

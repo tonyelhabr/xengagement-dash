@@ -86,12 +86,11 @@ def _generate_leaderboard(df):
         columns=cols_table,
         data=df_sort.to_dict('records'),
         # style_as_list_view=True,
-        # style_cell={'padding': '5px'},
-        # style_cell={
-        #     'font-family': 'Karla',
-        #     'font-size': '14px',
-        #     'padding': '5px'
-        # },
+        style_cell={
+            'font-family': 'Karla',
+            'font-size': '12px',
+            'padding': '5px'
+        },
         style_header={
             # 'backgroundColor': '#003f5c',
             'fontWeight': 'bold',

@@ -45,7 +45,6 @@ max_date = datetime.date.today()
 init_date = datetime.date(2020, 6, 1)
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-# server = app.server  # prod
 app.title = 'xGPhilosophy\'s xEngagement'
 
 app.layout = html.Div(
@@ -385,6 +384,7 @@ def update_charts(start_date, end_date, text):
     return favorites_over_time, retweets_over_time, favorites_v_pred, retweets_v_pred, favorites_shap, retweets_shap
 
 
-app.run_server(debug=True, port=8050)
-# if __name__ == '__main__':
-#     app.run_server(debug=False)
+# app.run_server(debug=True, port=8050)
+server = app.server  # prod
+if __name__ == '__main__':
+    app.run_server(debug=False)

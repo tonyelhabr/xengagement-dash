@@ -53,8 +53,8 @@ if(is_null) {
   
   tweets <-
     xengagement::retrieve_tweets(
-      tweets = tweets_new,
-      method = 'none',
+      # tweets = tweets_new,
+      method = 'all',
       export = TRUE,
       token = token
     )

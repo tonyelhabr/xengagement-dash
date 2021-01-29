@@ -385,4 +385,6 @@ def update_charts(start_date, end_date, text):
     return favorites_over_time, retweets_over_time, favorites_v_pred, retweets_v_pred, favorites_shap, retweets_shap
 
 
-app.run_server(debug=True, port=8050)
+# app.run_server(debug=True, port=8050)
+if __name__ == '__main__':
+    app.run_server(debug=False)

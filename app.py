@@ -5,11 +5,8 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_defer_js_import as dji
-import plotly.express as px
 import plotly.graph_objects as go
 from dash.dependencies import Output, Input
-import numpy as np
 import pandas as pd
 pd.options.mode.chained_assignment = None
 from utils.leaderboard import generate_leaderboard_tab
@@ -48,41 +45,8 @@ max_date = datetime.date.today()
 init_date = datetime.date(2020, 6, 1)
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-# server = app.server  # prod
+server = app.server  # prod
 app.title = 'xGPhilosophy\'s xEngagement'
-
-app.index_string = """
-<!DOCTYPE html>
-<html>
-    <head>
-        {%metas%}
-        <title>{%title%}</title>
-        {%favicon%}
-        {%css%}
-    </head>
-    <body>
-        {%app_entry%}
-        <footer>
-            {%config%}
-            {%scripts%}
-            <script type="text/x-mathjax-config">
-            MathJax.Hub.Config({
-                tex2jax: {
-                inlineMath: [ ['$','$'],],
-                processEscapes: true
-                }
-            });
-            </script>
-            {%renderer%}
-        </footer>
-    </body>
-</html>
-"""
-
-mathjax_script = dji.Import(
-    src=
-    "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_SVG"
-)
 
 app.layout = html.Div(
     [
@@ -176,8 +140,7 @@ app.layout = html.Div(
                 )
             ],
             fluid=False,
-        ),
-        mathjax_script
+        )
     ]
 )
 

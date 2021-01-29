@@ -13,10 +13,6 @@ def _generate_leaderboard(df):
     )
     cols_table = [
         {
-            'name': ['', 'Link'],
-            'id': 'link',
-            'presentation': 'markdown'
-        }, {
             'name': ['', 'Date'],
             'id': 'date',
             'type': 'datetime'
@@ -79,6 +75,10 @@ def _generate_leaderboard(df):
             'format': {
                 'specifier': ',.1f'
             }
+        }, {
+            'name': ['', 'Link'],
+            'id': 'link',
+            'presentation': 'markdown'
         }
     ]
     return dash_table.DataTable(

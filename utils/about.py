@@ -13,7 +13,7 @@ def generate_about_tab():
 
     The __"Prediction Explanation"__ tab describes the factors that go into the xFavorite and xRetweet numbers for each tweet using [SHAP values](https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html). A positive SHAP value indicates that a given feature (e.g. goals scored by the home team) contributed to making the prediction greater than the average prediction across all tweets, and visa versa for a negative SHAP value.
 
-    The __"Leaderboard"__ tab lists tweets in order of an "Engagement Over Expected (EOE)" metric that assigns each tweet a percentile (100 being the most over-achieving in engagement compared to expectation) based on the predicted and actual number of favorites and retweets. As of Jan. 26, 2021, the twee with the top EOE was [the recap for the 2-3 Brighton loss to Man United on Sep. 20, 2020](https://twitter.com/xGPhilosophy/status/1309847833739231233).
+    The __"Leaderboard"__ tab lists tweets in order of an "Engagement Over Expected (EOE)" metric that assigns each tweet a percentile (100 being the most over-achieving in engagement compared to expectation) based on the predicted and actual number of favorites and retweets. As of Jan. 26, 2021, the tweet with the top EOE was [the recap for the 2-3 Brighton loss to Man United on Sep. 20, 2020](https://twitter.com/xGPhilosophy/status/1309847833739231233).
     ```
     '''
     )

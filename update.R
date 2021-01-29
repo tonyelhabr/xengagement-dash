@@ -1,5 +1,6 @@
 
 library(xengagement)
+library(tweetrmd)
 options(xengagement.dir_data = 'data')
 dir_figs <- 'assets'
 token <- xengagement::get_twitter_token()

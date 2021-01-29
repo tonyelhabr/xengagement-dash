@@ -8,7 +8,7 @@ def _generate_leaderboard(df):
     df_sort = df.sort_values('total_diff_prnk', ascending=False)
     df.sort_values('created_at', ascending=False, inplace=True)
     df_sort['link'] = (
-        '[Tweet](https://twitter.com/xGPhilosophy/status/' +
+        '[\U0001f517](https://twitter.com/xGPhilosophy/status/' +
         df_sort['status_id'].astype(str) + ')'
     )
     cols_table = [
@@ -87,28 +87,28 @@ def _generate_leaderboard(df):
         data=df_sort.to_dict('records'),
         # style_as_list_view=True,
         # style_cell={'padding': '5px'},
-        style_cell={
-            'font-family': 'Karla',
-            'font-size': '14px',
-            'padding': '5px'
-        },
+        # style_cell={
+        #     'font-family': 'Karla',
+        #     'font-size': '14px',
+        #     'padding': '5px'
+        # },
         style_header={
             # 'backgroundColor': '#003f5c',
             'fontWeight': 'bold',
         },
-        style_data={
-            'whiteSpace': 'normal',
-            'height': 'auto',
-        },
+        # style_data={
+        #     'whiteSpace': 'normal',
+        #     'height': 'auto',
+        # },
         style_table={'overflowX': 'auto'},
         filter_action='native',
         sort_action='native',
-        sort_mode='single',
+        # sort_mode='single',
         # column_selectable='single',
         merge_duplicate_headers=True,
         # page_action='native',
         page_current=0,
-        page_size=20,
+        page_size=10,
     )
 
 

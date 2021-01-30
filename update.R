@@ -9,11 +9,11 @@ valid_stems <- xengagement::get_valid_stems()
 cols_lst <- xengagement::get_cols_lst(valid_stems[1]) # Doesn't matter what the target variable is.
 
 paths_data <- list.files(dir_data, full.names = TRUE)
-paths_data_info <- file.info(paths_data)
+# paths_data_info <- file.info(paths_data)
 cat(
   c(
     sprintf('Files in `dir_data = "%s"`.', dir_data),
-    paths_data_indfo
+    paths_data
   ),
   sep = '\n'
 )

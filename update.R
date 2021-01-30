@@ -26,7 +26,6 @@ tweets_bot <-
     export = TRUE,
     token = token
   )
-tweets_bot
 
 tweets_new <-
   xengagement::retrieve_tweets(
@@ -34,7 +33,6 @@ tweets_new <-
     export = FALSE,
     token = token
   )
-tweets_new
 
 is_null <- is.null(tweets_new)
 if(is_null) {
@@ -52,7 +50,7 @@ if(is_null) {
   #   )
   # tweets_transformed <- tweets %>% xengagement::transform_tweets(train = FALSE)
   # cat(sprintf('Reduced %s tweets to %s after transformation.', nrow(tweets), nrow(tweets_transformed)), sep = '\n')
-  tweets_transformed
+  # tweets_transformed
   
   .f_transform <- function() {
     # Could just do "since" here.
@@ -73,8 +71,7 @@ if(is_null) {
       overwrite = TRUE,
       export = TRUE
     )
-  tweets_transformed
-  
+
   
   res_preds <-
     dplyr::tibble(
@@ -92,8 +89,7 @@ if(is_null) {
         )
       )
     )
-  res_preds
-  
+
   # dashboard prep ---
   .path_x <- function(dir, file = tempfile(), ext = NULL) {
     if(!is.null(ext)) {
@@ -173,8 +169,7 @@ if(is_null) {
         )
     ) %>% 
     dplyr::arrange(idx)
-  preds_init
-  
+
   mapes <-
     preds_init %>% 
     dplyr::filter(favorite_count > 0 & retweet_count > 0 & favorite_pred > 0 & retweet_pred > 0) %>% 
@@ -187,7 +182,6 @@ if(is_null) {
       wt_favorite = mape_retweet / mapes,
       wt_retweet = mape_favorite / mapes
     )
-  mapes
   wt_favorite <- mapes$wt_favorite
   wt_retweet <- mapes$wt_retweet
   
@@ -201,16 +195,14 @@ if(is_null) {
         list(min = min, max = max)
       )
     )
-  preds_agg
-  
+
   scaling_factor <-
     preds_agg %>% 
     dplyr::transmute(
       scaling_factor = (favorite_count_max - favorite_count_min) / (retweet_count_max - retweet_count_min)
     ) %>% 
     dplyr::pull(scaling_factor)
-  scaling_factor
-  
+
   preds <-
     preds_init %>%
     dplyr::mutate(
@@ -248,7 +240,6 @@ if(is_null) {
         dry_run = TRUE
       )
     ))
-  res_generate
   readr::write_csv(preds, file.path(dir_data, 'preds.csv'), na = '')
   
   # shap export ----
@@ -258,8 +249,7 @@ if(is_null) {
       lab = c(cols_lst$cols_x_names, 'Baseline'),
       feature = c(cols_lst$cols_x, 'baseline')
     )
-  cols_x
-  
+
   # tweets_transformed <- file.path(dir_data, 'tweets_transformed.rds') %>% readr::read_rds()
   # tweets_transformed
   
@@ -277,8 +267,7 @@ if(is_null) {
       -c(idx)
     ) %>% 
     dplyr::as_tibble()
-  tweets_rescaled_long
-  
+
   .f_import_shap <- function(stem) {
     path <- file.path(dir_data, sprintf('shap_%s.rds', stem))
     shap <- path %>% readr::read_rds()
@@ -297,8 +286,7 @@ if(is_null) {
             TRUE ~ 'neutral'
           )
       )
-    shap_long
-    
+
     res <-
       shap_long %>% 
       dplyr::full_join(
@@ -325,7 +313,6 @@ if(is_null) {
     dplyr::filter(feature != 'baseline') %>% 
     # dplyr::mutate(dplyr::across(text, ~forcats::fct_reorder(.x, dplyr::desc(.x)))) %>% 
     dplyr::arrange(idx, feature)
-  shap
   readr::write_csv(shap, .path_data_csv(file = 'shap'))
   
   cat(sprintf('Successfully completed update at %s', Sys.time()), sep = '\n')

@@ -33,34 +33,38 @@ if(is_null) {
   n_tweet <- nrow(tweets_new)
   cat(sprintf('%d new tweet%s found at %s!', n_tweet, ifelse(n_tweet > 1L, 's', ''), Sys.time()), sep = '\n')
   
-  # .f_transform <- function() {
-  #   tweets <- xengagement::retrieve_tweets(method = 'since', export = TRUE, append = TRUE, token = token)
-  #   tweets_transformed <- tweets %>% xengagement::transform_tweets(train = FALSE)
-  #   cat(sprintf('Reduced %s tweets to %s after transformation.', nrow(tweets), nrow(tweets_transformed)))
-  #   tweets_transformed
-  # }
-  # 
-  # tweets_transformed <-
-  #   xengagement::do_get(
-  #     f = .f_transform,
-  #     path = file.path(dir_data, 'tweets_transformed.rds'),
-  #     f_import = readr::read_rds,
-  #     f_export = readr::write_rds,
-  #     overwrite = TRUE,
-  #     export = TRUE
+  # tweets <-
+  #   xengagement::retrieve_tweets(
+  #     # tweets = tweets_new,
+  #     method = 'all',
+  #     export = TRUE,
+  #     token = token
   #   )
-  # tweets_transformed
-  
-  tweets <-
-    xengagement::retrieve_tweets(
-      # tweets = tweets_new,
-      method = 'all',
-      export = TRUE,
-      token = token
-    )
-  tweets_transformed <- tweets %>% xengagement::transform_tweets(train = FALSE)
-  cat(sprintf('Reduced %s tweets to %s after transformation.', nrow(tweets), nrow(tweets_transformed)), sep = '\n')
+  # tweets_transformed <- tweets %>% xengagement::transform_tweets(train = FALSE)
+  # cat(sprintf('Reduced %s tweets to %s after transformation.', nrow(tweets), nrow(tweets_transformed)), sep = '\n')
   tweets_transformed
+  
+  .f_transform <- function() {
+    # Could just do "since" here.
+    # There is techinically a bit of a flaw with the whole logic.
+    # If no tweet is made in the past `xengagement.n_hour_fresh` hours (24 by default), then the whole script exits early, but tweets can still accumulate likes/retweets.
+    tweets <- xengagement::retrieve_tweets(method = 'all', export = TRUE, token = token)
+    tweets_transformed <- tweets %>% xengagement::transform_tweets(train = FALSE)
+    cat(sprintf('Reduced %s tweets to %s after transformation.', nrow(tweets), nrow(tweets_transformed)))
+    tweets_transformed
+  }
+  
+  tweets_transformed <-
+    xengagement::do_get(
+      f = .f_transform,
+      path = file.path(dir_data, 'tweets_transformed.rds'),
+      f_import = readr::read_rds,
+      f_export = readr::write_rds,
+      overwrite = TRUE,
+      export = TRUE
+    )
+  tweets_transformed
+  
   
   res_preds <-
     dplyr::tibble(
@@ -90,7 +94,7 @@ if(is_null) {
     file.path(dir, sprintf('%s%s', file, ext))
   }
   
-  .path_data <- function(dir = get_dir_data(), ...) {
+  .path_data <- function(dir = dir_data, ...) {
     .path_x(dir = dir, ...)
   }
   .path_data_csv <- purrr::partial(.path_data, ext = 'csv', ... = )
@@ -208,13 +212,16 @@ if(is_null) {
     dplyr::arrange(total_diff_rnk)
   # preds %>% dplyr::select(total_diff_prnk, total_diff, text, tm_h, tm_a) %>% dplyr::arrange(total_diff_prnk)
   
-  latest_tweet <-
-    preds %>%
-    dplyr::slice_max(created_at)
+  if(TRUE) {
+    # This is a valid way as well. It just isn't as clear what's going on.
+    # res_screenshot <- preds %>% xengagement::screenshot_latest_tweet(dir = dir_figs)
+    latest_tweet <- preds %>% dplyr::slice_max(created_at)
+    res_screenshot <- xengagement::screenshot_latest_tweet(status_id = latest_tweet$status_id, dir = dir_figs)
+    
+    latest_tweet_bot <- tweets_bot %>% dplyr::slice_max(created_at)
+    res_screenshot_bot <- xengagement::screenshot_latest_tweet(status_id = latest_tweet_bot$status_id, dir = dir_figs)
+  }
   
-  res_screenshot <-
-    preds %>% 
-    xengagement::screenshot_latest_tweet(dir = dir_figs)
   
   res_generate <-
     preds %>%

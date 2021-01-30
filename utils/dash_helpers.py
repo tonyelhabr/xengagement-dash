@@ -14,4 +14,4 @@ def _graph_wrapper(id):
 
 
 def col_graph_wrapper(id):
-    return dbc.Col([_graph_wrapper(id)], width=12, lg=6)
+    return dbc.Col([_graph_wrapper(id)], width=12, md=6)

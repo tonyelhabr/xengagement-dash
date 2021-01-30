@@ -23,6 +23,13 @@ external_stylesheets = [
     }, dbc.themes.BOOTSTRAP
 ]
 
+meta_tags = [
+    {
+        'name': 'viewport',
+        'content': 'width=device-width, initial-scale=1.0'
+    }
+]
+
 shap = import_shap()
 preds = import_preds()
 leaderboard_tab = generate_leaderboard_tab(preds)
@@ -44,7 +51,7 @@ min_date = datetime.date(2020, 1, 1)
 max_date = datetime.date.today()
 init_date = datetime.date(2020, 6, 1)
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, meta_tags=meta_tags)
 app.title = 'xGPhilosophy\'s xEngagement'
 
 app.layout = html.Div(

@@ -1,12 +1,22 @@
 
 library(xengagement)
-library(tweetrmd)
+# library(tweetrmd)
 options(xengagement.dir_data = 'data')
 dir_figs <- 'assets'
 token <- xengagement::get_twitter_token()
 dir_data <- xengagement::get_dir_data()
 valid_stems <- xengagement::get_valid_stems()
 cols_lst <- xengagement::get_cols_lst(valid_stems[1]) # Doesn't matter what the target variable is.
+
+paths_data <- list.files(dir_data, full.names = TRUE)
+paths_data_info <- file.info(paths_data)
+cat(
+  c(
+    sprintf('Files in `dir_data = "%s"`.', dir_data),
+    paths_data_indfo
+  ),
+  sep = '\n'
+)
 
 # data refresh ----
 tweets_bot <-
@@ -167,7 +177,7 @@ if(is_null) {
   
   mapes <-
     preds_init %>% 
-    dplyr::filter(retweet_count > 0) %>% 
+    dplyr::filter(favorite_count > 0 & retweet_count > 0 & favorite_pred > 0 & retweet_pred > 0) %>% 
     dplyr::summarize(
       mape_favorite = mean(abs((favorite_count - favorite_pred) / favorite_count), na.rm = TRUE),
       mape_retweet = mean(abs((retweet_count - retweet_pred) / retweet_count), na.rm = TRUE)
@@ -181,8 +191,10 @@ if(is_null) {
   wt_favorite <- mapes$wt_favorite
   wt_retweet <- mapes$wt_retweet
   
+  now <- lubridate::now()
   preds_agg <-
     preds_init %>%
+    dplyr::filter(created_at <= (!!now - lubridate::hours(24))) %>% 
     dplyr::summarize(
       dplyr::across(
         dplyr::matches('^(favorite|retweet)_(count)$'),
@@ -212,7 +224,8 @@ if(is_null) {
     dplyr::arrange(total_diff_rnk)
   # preds %>% dplyr::select(total_diff_prnk, total_diff, text, tm_h, tm_a) %>% dplyr::arrange(total_diff_prnk)
   
-  if(TRUE) {
+  # TODO: Fix this: ("Error in s$close() : attempt to apply non-function")
+  if(FALSE) {
     # This is a valid way as well. It just isn't as clear what's going on.
     # res_screenshot <- preds %>% xengagement::screenshot_latest_tweet(dir = dir_figs)
     latest_tweet <- preds %>% dplyr::slice_max(created_at)
@@ -221,7 +234,6 @@ if(is_null) {
     latest_tweet_bot <- tweets_bot %>% dplyr::slice_max(created_at)
     res_screenshot_bot <- xengagement::screenshot_latest_tweet(status_id = latest_tweet_bot$status_id, dir = dir_figs)
   }
-  
   
   res_generate <-
     preds %>%

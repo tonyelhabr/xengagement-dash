@@ -1,77 +1,114 @@
 
+# setup ----
 library(xengagement)
 # library(tweetrmd)
+
 options(xengagement.dir_data = 'data')
 dir_figs <- 'assets'
 token <- xengagement::get_twitter_token()
 dir_data <- xengagement::get_dir_data()
 valid_stems <- xengagement::get_valid_stems()
-cols_lst <- xengagement::get_cols_lst(valid_stems[1]) # Doesn't matter what the target variable is.
+# Doesn't matter what the target variable is currently cuz the dashboard doesn't use it.
+cols_lst <- xengagement::get_cols_lst(valid_stems[1])
+n_hour_fresh <- getOption('xengagement.n_hour_fresh')
 
 paths_data <- list.files(dir_data, full.names = TRUE)
-# paths_data_info <- file.info(paths_data)
-cat(
-  c(
-    sprintf('Files in `dir_data = "%s"`.', dir_data),
-    paths_data
-  ),
-  sep = '\n'
-)
+paths_data_info <- file.info(paths_data)
+cat(sprintf('Files in `dir_data = "%s"`.', dir_data), sep = '\n')
+# cbind(as.data.frame(paths_data), paths_data_info[, c('mtime')])
 
-# data refresh ----
-tweets_bot <-
-  xengagement::retrieve_tweets(
-    user = 'punditratio',
-    method = 'since',
-    export = TRUE,
-    token = token
-  )
+# functions, utils-display ----
+.display_info <- function(x, ..., .envir = parent.frame(), .verbose = TRUE, .f_glue = glue::glue_collapse) {
+  if (!.verbose) {
+    return(invisible(x))
+  }
+  x <- .f_glue(x, '\n')
+  x <- glue::glue(x, .envir = .envir)
+  cat(x, sep = '\n')
+}
 
-tweets_new <-
-  xengagement::retrieve_tweets(
-    method = 'new',
-    export = FALSE,
-    token = token
-  )
+.display_warning <- function(x, ..., .envir = parent.frame()) {
+  x <- glue::glue_collapse(x, '\n')
+  x <- glue::glue(x, .envir = .envir)
+  warning(x, call. = FALSE, immediate. = TRUE)
+}
 
-is_null <- is.null(tweets_new)
-if(is_null) {
-  cat(sprintf('0 new tweet found at %s!', Sys.time()), , sep = '\n')
-} else {
-  n_tweet <- nrow(tweets_new)
-  cat(sprintf('%d new tweet%s found at %s!', n_tweet, ifelse(n_tweet > 1L, 's', ''), Sys.time()), sep = '\n')
+.display_error <- function(x, ..., .envir = parent.frame()) {
+  x <- glue::glue_collapse(x, '\n')
+  x <- glue::glue(x, .envir = .envir)
+  cnd <- structure(class = c('usethis_error', 'error', 'condition'), list(message = x))
+  stop(cnd)
+}
+
+# functions, path ----
+.path_x <- function(dir, file = tempfile(), ext = NULL) {
+  if(!is.null(ext)) {
+    ext <- sprintf('.%s', ext)
+  } else {
+    ext <- ''
+  }
+  file.path(dir, sprintf('%s%s', file, ext))
+}
+
+.path_data <- function(dir = dir_data, ...) {
+  .path_x(dir = dir, ...)
+}
+# .path_data_csv <- purrr::partial(.path_data, ext = 'csv', ... = )
+.path_data_rds <- purrr::partial(.path_data, ext = 'rds', ... = )
+
+.export_csv <- function(x, file = deparse(substitute(x)), na = '', ...) {
+  readr::write_csv(x, .path_data(file = file, ext = 'csv'), na = na, ...)
+}
+
+# functions, main ----
+do_update <- function() {
   
-  # tweets <-
-  #   xengagement::retrieve_tweets(
-  #     # tweets = tweets_new,
-  #     method = 'all',
-  #     export = TRUE,
-  #     token = token
-  #   )
-  # tweets_transformed <- tweets %>% xengagement::transform_tweets(train = FALSE)
-  # cat(sprintf('Reduced %s tweets to %s after transformation.', nrow(tweets), nrow(tweets_transformed)), sep = '\n')
-  # tweets_transformed
+  tweets_bot <-
+    xengagement::retrieve_tweets(
+      user = 'punditratio',
+      method = 'since',
+      export = TRUE,
+      token = token
+    )
+  
+  tweets_new <-
+    xengagement::retrieve_tweets(
+      method = 'new',
+      export = FALSE,
+      token = token
+    )
+  
+  is_null <- is.null(tweets_new)
+  if(is_null) {
+    suffix <- ifelse(n_hour_fresh > 1L, 's', '')
+    .display_info('0 new tweets found in past {n_hour_fresh} hours{suffix} at {Sys.time()}!')
+    return(invisible(FALSE))
+  }
+  n_tweet <- nrow(tweets_new)
+  
+  tweets <-
+    xengagement::retrieve_tweets(
+      method = 'all',
+      export = TRUE,
+      token = token
+    )
   
   .f_transform <- function() {
-    # Could just do "since" here.
-    # There is techinically a bit of a flaw with the whole logic.
-    # If no tweet is made in the past `xengagement.n_hour_fresh` hours (24 by default), then the whole script exits early, but tweets can still accumulate likes/retweets.
-    tweets <- xengagement::retrieve_tweets(method = 'all', export = TRUE, token = token)
+    
     tweets_transformed <- tweets %>% xengagement::transform_tweets(train = FALSE)
-    cat(sprintf('Reduced %s tweets to %s after transformation.', nrow(tweets), nrow(tweets_transformed)))
+    .display_info('Reduced {nrow(tweets)} tweets to {nrow(tweets_transformed)} after transformation.')
     tweets_transformed
   }
   
   tweets_transformed <-
     xengagement::do_get(
       f = .f_transform,
-      path = file.path(dir_data, 'tweets_transformed.rds'),
+      path = .path_data_rds(file = 'tweets_transformed'),
       f_import = readr::read_rds,
       f_export = readr::write_rds,
       overwrite = TRUE,
       export = TRUE
     )
-
   
   res_preds <-
     dplyr::tibble(
@@ -89,25 +126,9 @@ if(is_null) {
         )
       )
     )
-
-  # dashboard prep ---
-  .path_x <- function(dir, file = tempfile(), ext = NULL) {
-    if(!is.null(ext)) {
-      ext <- sprintf('.%s', ext)
-    } else {
-      ext <- ''
-    }
-    file.path(dir, sprintf('%s%s', file, ext))
-  }
   
-  .path_data <- function(dir = dir_data, ...) {
-    .path_x(dir = dir, ...)
-  }
-  .path_data_csv <- purrr::partial(.path_data, ext = 'csv', ... = )
-  
-  # preds export ----
   .f_import_preds <- function(stem) {
-    path <- file.path(dir_data, sprintf('preds_%s.rds', stem))
+    path <- .path_data_rds(file = sprintf('preds_%s', stem))
     col_res_sym <- sprintf('%s_diff', stem) %>% dplyr::sym()
     col_pred_sym <- sprintf('%s_pred', stem) %>% dplyr::sym()
     res <- 
@@ -169,7 +190,7 @@ if(is_null) {
         )
     ) %>% 
     dplyr::arrange(idx)
-
+  
   mapes <-
     preds_init %>% 
     dplyr::filter(favorite_count > 0 & retweet_count > 0 & favorite_pred > 0 & retweet_pred > 0) %>% 
@@ -186,23 +207,24 @@ if(is_null) {
   wt_retweet <- mapes$wt_retweet
   
   now <- lubridate::now()
+  
   preds_agg <-
     preds_init %>%
-    dplyr::filter(created_at <= (!!now - lubridate::hours(24))) %>% 
+    dplyr::filter(created_at <= (!!now - lubridate::hours(n_hour_fresh))) %>% 
     dplyr::summarize(
       dplyr::across(
         dplyr::matches('^(favorite|retweet)_(count)$'),
         list(min = min, max = max)
       )
     )
-
+  
   scaling_factor <-
     preds_agg %>% 
     dplyr::transmute(
       scaling_factor = (favorite_count_max - favorite_count_min) / (retweet_count_max - retweet_count_min)
     ) %>% 
     dplyr::pull(scaling_factor)
-
+  
   preds <-
     preds_init %>%
     dplyr::mutate(
@@ -214,17 +236,22 @@ if(is_null) {
     ) %>%
     dplyr::select(-dplyr::matches('_scaled$')) %>% 
     dplyr::arrange(total_diff_rnk)
-  # preds %>% dplyr::select(total_diff_prnk, total_diff, text, tm_h, tm_a) %>% dplyr::arrange(total_diff_prnk)
   
-  # TODO: Fix this: ("Error in s$close() : attempt to apply non-function")
+  # UPDATE: Fixed, but not currently using the outputs, so don't run for now.
   if(FALSE) {
     # This is a valid way as well. It just isn't as clear what's going on.
     # res_screenshot <- preds %>% xengagement::screenshot_latest_tweet(dir = dir_figs)
     latest_tweet <- preds %>% dplyr::slice_max(created_at)
-    res_screenshot <- xengagement::screenshot_latest_tweet(status_id = latest_tweet$status_id, dir = dir_figs)
+    .f_screenshot <- 
+      purrr::partial(
+        xengagement::screenshot_latest_tweet, 
+        dir = dir_figs,
+        ... = 
+      )
+    res_screenshot <- .f_screenshot(status_id = latest_tweet$status_id)
     
     latest_tweet_bot <- tweets_bot %>% dplyr::slice_max(created_at)
-    res_screenshot_bot <- xengagement::screenshot_latest_tweet(status_id = latest_tweet_bot$status_id, dir = dir_figs)
+    res_screenshot_bot <- .f_screenshot(status_id = latest_tweet_bot$status_id)
   }
   
   res_generate <-
@@ -236,22 +263,17 @@ if(is_null) {
       ~ xengagement::generate_tweet(
         pred = ..1,
         tweets = tweets_bot,
+        in_reply_to_tweets = tweets,
         in_reply_to_status_id = ..2,
         dry_run = TRUE
       )
     ))
-  readr::write_csv(preds, file.path(dir_data, 'preds.csv'), na = '')
   
-  # shap export ----
-  # Maybe this should be exported tweets_transformed (with `usethis::use_data()`)?
   cols_x <- 
     dplyr::tibble(
       lab = c(cols_lst$cols_x_names, 'Baseline'),
       feature = c(cols_lst$cols_x, 'baseline')
     )
-
-  # tweets_transformed <- file.path(dir_data, 'tweets_transformed.rds') %>% readr::read_rds()
-  # tweets_transformed
   
   tweets_rescaled_long <-
     tweets_transformed %>% 
@@ -267,9 +289,9 @@ if(is_null) {
       -c(idx)
     ) %>% 
     dplyr::as_tibble()
-
+  
   .f_import_shap <- function(stem) {
-    path <- file.path(dir_data, sprintf('shap_%s.rds', stem))
+    path <- .path_data_rds(file = sprintf('shap_%s', stem))
     shap <- path %>% readr::read_rds()
     shap_long <-
       shap %>%
@@ -286,7 +308,7 @@ if(is_null) {
             TRUE ~ 'neutral'
           )
       )
-
+    
     res <-
       shap_long %>% 
       dplyr::full_join(
@@ -311,9 +333,16 @@ if(is_null) {
     # dplyr::mutate(dplyr::across(where(is.numeric), ~dplyr::coalesce(.x, 0))) %>% 
     dplyr::left_join(preds %>% dplyr::select(idx, text), by = 'idx') %>% 
     dplyr::filter(feature != 'baseline') %>% 
-    # dplyr::mutate(dplyr::across(text, ~forcats::fct_reorder(.x, dplyr::desc(.x)))) %>% 
     dplyr::arrange(idx, feature)
-  readr::write_csv(shap, .path_data_csv(file = 'shap'))
   
-  cat(sprintf('Successfully completed update at %s', Sys.time()), sep = '\n')
+  .export_csv(preds)
+  .export_csv(shap)
+  
+  .display_info('Successfully completed update at {Sys.time()}.')
+  return(invisible(TRUE))
 }
+
+# main ----
+print(paths_data_info[, c('mtime'), drop = FALSE])
+do_update()
+

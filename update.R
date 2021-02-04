@@ -266,7 +266,7 @@ do_update <- function() {
         tweets = tweets_bot,
         in_reply_to_tweets = tweets,
         in_reply_to_status_id = ..2,
-        dry_run = TRUE
+        dry_run = FALSE
       )
     ))
   

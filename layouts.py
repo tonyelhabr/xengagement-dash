@@ -4,12 +4,46 @@ import datetime
 from app import app
 from utils import *
 
-# formatting
 styles_current_page = {
     'text-decoration': 'underline',
     'text-decoration-color': '#ffffff',  # app_colors['blue'],
     'text-shadow': '0px 0px 1px #ffffff'
 }
+
+def _graph_wrapper(id):
+    return dcc.Graph(
+        id=id,
+        config={
+            'displayModeBar': True,
+            'displaylogo': False,
+            'modeBarButtonsToRemove': ['lasso2d']
+        }
+    )
+
+
+def get_generic_col_classname():
+    return 'col-lg-5 col-md-5 col-sm-10 col-xs-10'
+
+
+def _div_graph_wrapper(id):
+    return html.Div(
+        [_graph_wrapper(id=id)], className=get_generic_col_classname()
+    )
+
+
+def row_div_graph_wrapper(suffix):
+    id1 = 'favorites-' + suffix
+    id2 = 'retweets-' + suffix
+    return html.Div(
+        [
+            html.Div([], className='col-1'),
+            _div_graph_wrapper(id1),
+            _div_graph_wrapper(id2),
+            html.Div([], className='col-1'),
+        ],
+        className='row'
+    )
+
 
 preds = import_preds()
 leaderboard = generate_leaderboard(preds)

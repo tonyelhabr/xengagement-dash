@@ -3,7 +3,7 @@ import pandas as pd
 
 def import_shap():
     return pd.read_csv(
-        'https://raw.githubusercontent.com/tonyelhabr/xengagement-dash/master/data/shap.csv.csv'
+        'https://raw.githubusercontent.com/tonyelhabr/xengagement-dash/master/data/shap.csv'
     )
 
 

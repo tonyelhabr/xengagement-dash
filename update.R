@@ -73,6 +73,7 @@ do_update <- function() {
   
   tweets_new <-
     xengagement::retrieve_tweets(
+      user = 'xGPhilosophy',
       method = 'new',
       export = FALSE,
       token = token

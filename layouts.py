@@ -119,7 +119,7 @@ def get_date_filter():
                                 # first_day_of_week=1,
                                 end_date_placeholder_text='End date',
                                 style={
-                                    # 'font-size': '14px',
+                                    'font-size': '12px',
                                     'display': 'inline-block',
                                     'border-radius': '2px',
                                     'border': '1px solid #ffffff',
@@ -165,7 +165,7 @@ def get_text_filter():
                                 clearable=True,
                                 className='dropdown',
                                 style={
-                                    # 'font-size': '14px',
+                                    'font-size': '12px',
                                     # 'display': 'inline-block',
                                     # 'border-radius': '2px',
                                     # 'border': '1px solid #ffffff',

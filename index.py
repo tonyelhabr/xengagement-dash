@@ -4,7 +4,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 from app import app
-# from app import server
+from app import server
 
 from layouts import page_about, page_data_and_preds, page_shap, page_leaderboard
 import callbacks

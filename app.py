@@ -56,7 +56,7 @@ def generate_about(preds=import_preds()):
     def _pull(col):
         return pred_top[[col]].astype(str).values[0]
 
-    text_top = _pull('text')
+    text_top = _pull('lab_text')
     date_top = _pull('date')
     link_top = _pull('link').replace('[Link]', '')
     about_md = dcc.Markdown(
@@ -92,7 +92,7 @@ def generate_leaderboard(preds):
         }, {
             'name': ['Home', 'Team'],
             'id': 'tm_h',
-            'type': 'text'
+            'type': 'lab_text'
         }, {
             'name': ['Home', 'G'],
             'id': 'g_h',
@@ -104,7 +104,7 @@ def generate_leaderboard(preds):
         }, {
             'name': ['Away', 'Team'],
             'id': 'tm_a',
-            'type': 'text'
+            'type': 'lab_text'
         }, {
             'name': ['Away', 'G'],
             'id': 'g_a',
@@ -151,7 +151,7 @@ def generate_leaderboard(preds):
         }, {
             'name': ['', 'Link'],
             'id': 'link',
-            'type': 'text',
+            'type': 'lab_text',
             'presentation': 'markdown'
         }
     ]
@@ -281,7 +281,7 @@ preds = import_preds()
 leaderboard = generate_leaderboard(preds)
 about = generate_about()
 created_at_max = preds['created_at'].max()
-initial_text = preds['text'].iloc[0]
+initial_text = preds['lab_text'].iloc[0]
 # min_date = preds['date'].min()
 # max_date = preds['date'].max()
 min_date = datetime.date(2020, 1, 1)
@@ -570,13 +570,13 @@ def update_text_dropdown(start_date, end_date):
     preds_filt = _filter_date_between(preds, start_date, end_date)
     # preds_filt = preds.loc[selected, :]
     # preds_filt = preds
-    opts = [{'label': x, 'value': x} for x in preds_filt['text']]
+    opts = [{'label': x, 'value': x} for x in preds_filt['lab_text']]
     return opts
 
 
 def _split_df_by_text(df, text):
-    selected = (df['text'] == text)
-    other = (df['text'] != text)
+    selected = (df['lab_text'] == text)
+    other = (df['lab_text'] != text)
     df_selected = df.loc[selected, :]
     df_other = df.loc[other, :]
     return df_selected, df_other
@@ -648,7 +648,7 @@ def _plot_actual(df, stem, text, col_x, title_text, hovertemplate):
             x=df[col_x],
             y=df[col_y],
             mode='markers',
-            # text=df['text'],
+            # text=df['lab_text'],
             text=df['lab_hover'],
             opacity=o,
             hovertemplate=hovertemplate,
@@ -720,7 +720,7 @@ def _identify_sign_color(sign):
 
 
 def _plot_shap(df, stem, text):
-    selected = (df['text'] == text)
+    selected = (df['lab_text'] == text)
     df_selected = df.loc[selected, :]
 
     if len(df_selected) == 0:

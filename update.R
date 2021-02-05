@@ -164,9 +164,8 @@ do_update <- function() {
   preds_init <-
     preds_init %>% 
     dplyr::mutate(
-      dplyr::across(
-        text,
-        ~ sprintf(
+      lab_text =
+        sprintf(
           '%s: %s (%.2f) %d-%d (%.2f) %s',
           lubridate::date(created_at),
           # lubridate::hour(created_at),
@@ -177,18 +176,8 @@ do_update <- function() {
           g_a,
           xg_a,
           tm_a
-        )
-      ),
-      lab_hover = 
-        sprintf(
-          '%s (%.2f) %d-%d (%.2f) %s',
-          tm_h,
-          xg_h,
-          g_h,
-          g_a,
-          xg_a,
-          tm_a
-        )
+        ),
+      lab_hover = stringr::str_remove(lab_text, '^.*[:]\\s')
     ) %>% 
     dplyr::arrange(idx)
   
@@ -242,7 +231,7 @@ do_update <- function() {
   if(FALSE) {
     # This is a valid way as well. It just isn't as clear what's going on.
     # res_screenshot <- preds %>% xengagement::screenshot_latest_tweet(dir = dir_figs)
-    latest_tweet <- preds %>% dplyr::slice_max(created_at)
+    latest_tweet <- preds %>% dplyr::slice_max(created_at, with_ties = FALSE)
     .f_screenshot <- 
       purrr::partial(
         xengagement::screenshot_latest_tweet, 
@@ -251,7 +240,7 @@ do_update <- function() {
       )
     res_screenshot <- .f_screenshot(status_id = latest_tweet$status_id)
     
-    latest_tweet_bot <- tweets_bot %>% dplyr::slice_max(created_at)
+    latest_tweet_bot <- tweets_bot %>% dplyr::slice_max(created_at, with_ties = FALSE)
     res_screenshot_bot <- .f_screenshot(status_id = latest_tweet_bot$status_id)
   }
   

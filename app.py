@@ -158,12 +158,13 @@ def generate_leaderboard(preds):
     return dash_table.DataTable(
         id='leaderboard-table',
         style_header={
-            # 'backgroundColor': 'transparent',
+            'backgroundColor': 'transparent',
             'fontFamily': 'Karla',
             'fontWeight': 'bold',
             'font-size': '14px',
             'color': '#003f5c',
-            'border': '1px solid #003f5c',
+            # 'border': '1px solid #003f5c',
+            'border': '0px transparent',
             # 'textAlign': 'center'
         },
         style_cell={

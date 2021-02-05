@@ -179,3 +179,12 @@ tr > td > div > p a:hover {
 .hljs {
   display: none;
 }
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner table {
+    font-family: 'Karla' !important;
+    --accent: #ffa600 !important;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
+    background-color: #ffffff;
+}

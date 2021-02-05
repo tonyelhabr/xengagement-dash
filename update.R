@@ -164,7 +164,7 @@ do_update <- function() {
   preds_init <-
     preds_init %>% 
     dplyr::mutate(
-      lab_text =
+      text_lab =
         sprintf(
           '%s: %s (%.2f) %d-%d (%.2f) %s',
           lubridate::date(created_at),
@@ -177,7 +177,7 @@ do_update <- function() {
           xg_a,
           tm_a
         ),
-      lab_hover = stringr::str_remove(lab_text, '^.*[:]\\s')
+      lab_hover = stringr::str_remove(text_lab, '^.*[:]\\s')
     ) %>% 
     dplyr::arrange(idx)
   
@@ -227,6 +227,23 @@ do_update <- function() {
     dplyr::select(-dplyr::matches('_scaled$')) %>% 
     dplyr::arrange(total_diff_rnk)
   
+  
+  preds_long <-
+    preds %>%
+    dplyr::select(
+      status_id,
+      favorite_count,
+      favorite_pred,
+      retweet_count,
+      retweet_pred
+    ) %>%
+    tidyr::pivot_longer(
+      -status_id,
+      names_to = c('stem', 'what'),
+      names_pattern = '(favorite|retweet)_(count|pred)'
+    ) %>%
+    tidyr::pivot_wider(names_from = 'what', values_from = 'value')
+  
   # UPDATE: Fixed, but not currently using the outputs, so don't run for now.
   if(FALSE) {
     # This is a valid way as well. It just isn't as clear what's going on.
@@ -255,6 +272,8 @@ do_update <- function() {
         tweets = tweets_bot,
         in_reply_to_tweets = tweets,
         in_reply_to_status_id = ..2,
+        preds_long = preds_long,
+        dir = dir_figs,
         dry_run = FALSE
       )
     ))
@@ -321,7 +340,7 @@ do_update <- function() {
       values_fill = list(pred = 0, count = 0, sign = 'neutral', shap_value = 0)
     ) %>% 
     # dplyr::mutate(dplyr::across(where(is.numeric), ~dplyr::coalesce(.x, 0))) %>% 
-    dplyr::left_join(preds %>% dplyr::select(idx, lab_text), by = 'idx') %>% 
+    dplyr::left_join(preds %>% dplyr::select(idx, text), by = 'idx') %>% 
     dplyr::filter(feature != 'baseline') %>% 
     dplyr::arrange(idx, feature)
   

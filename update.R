@@ -165,7 +165,7 @@ do_update <- function() {
   preds_init <-
     preds_init %>% 
     dplyr::mutate(
-      text_lab =
+      lab_text =
         sprintf(
           '%s: %s (%.2f) %d-%d (%.2f) %s',
           lubridate::date(created_at),
@@ -178,7 +178,7 @@ do_update <- function() {
           xg_a,
           tm_a
         ),
-      lab_hover = stringr::str_remove(text_lab, '^.*[:]\\s')
+      lab_hover = stringr::str_remove(lab_text, '^.*[:]\\s')
     ) %>% 
     dplyr::arrange(idx)
   

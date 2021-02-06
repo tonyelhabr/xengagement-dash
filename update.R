@@ -5,6 +5,7 @@ library(xengagement)
 
 options(xengagement.dir_data = 'data')
 dir_figs <- 'assets'
+
 token <- xengagement::get_twitter_token()
 dir_data <- xengagement::get_dir_data()
 valid_stems <- xengagement::get_valid_stems()
@@ -164,7 +165,7 @@ do_update <- function() {
   preds_init <-
     preds_init %>% 
     dplyr::mutate(
-      lab_text =
+      text_lab =
         sprintf(
           '%s: %s (%.2f) %d-%d (%.2f) %s',
           lubridate::date(created_at),
@@ -177,7 +178,7 @@ do_update <- function() {
           xg_a,
           tm_a
         ),
-      lab_hover = stringr::str_remove(lab_text, '^.*[:]\\s')
+      lab_hover = stringr::str_remove(text_lab, '^.*[:]\\s')
     ) %>% 
     dplyr::arrange(idx)
   
@@ -227,7 +228,6 @@ do_update <- function() {
     dplyr::select(-dplyr::matches('_scaled$')) %>% 
     dplyr::arrange(total_diff_rnk)
   
-  
   preds_long <-
     preds %>%
     dplyr::select(
@@ -264,14 +264,14 @@ do_update <- function() {
   res_generate <-
     preds %>%
     dplyr::semi_join(tweets_new %>% dplyr::select(status_id), by = 'status_id') %>% 
-    tidyr::nest(data = -c(idx, status_id)) %>%
-    dplyr::mutate(res = purrr::map2(
-      data, status_id,
+    tidyr::nest(data = -c(idx)) %>%
+    dplyr::mutate(res = purrr::map(
+      data,
       ~ xengagement::generate_tweet(
-        pred = ..1,
+        pred = .x,
         tweets = tweets_bot,
         in_reply_to_tweets = tweets,
-        in_reply_to_status_id = ..2,
+        # in_reply_to_status_id = ..2,
         preds_long = preds_long,
         dir = dir_figs,
         dry_run = FALSE
@@ -354,4 +354,3 @@ do_update <- function() {
 # main ----
 print(paths_data_info[, c('mtime'), drop = FALSE])
 do_update()
-

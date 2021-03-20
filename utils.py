@@ -116,7 +116,7 @@ def generate_about(preds=None):
 
     This app shows the number of favorites (likes) and retweets that every xGPhilosphy end-of-match tweet has received, as well as "expected favorites" (xFavorites) and "expected retweets" (xRetweets) can be compared to the actual number of favorites and retweets to provide an indirect measure of how unexpected a match result is.
 
-    For example, we can use the [__Engagement by Tweet__ page](/apps/by-tweet) to view the actual and expected engagement for the [Brighton (3.03) 2-3 (1.91) Man United game on 2020-09-26](https://twitter.com/xGPhilosophy/status/1309847833739231233). Below is a timeline of the number of retweets for all xGPhilosophy final match tweets since the beginning of the 2020/21 Premier League sesaon, with the Brighton - Man United game annotated with a black marker. (A similar plot is available for number of favorites.)
+    For example, we can use the [__Engagement__ page](/apps/preds) to view the actual and expected engagement for the [Brighton (3.03) 2-3 (1.91) Man United game on 2020-09-26](https://twitter.com/xGPhilosophy/status/1309847833739231233). Below is a timeline of the number of retweets for all xGPhilosophy final match tweets since the beginning of the 2020/21 Premier League sesaon, with the Brighton - Man United game annotated with a black marker. (A similar plot is available for number of favorites.)
     
     ![](/assets/retweet-actuals-over-time-brighton-manu-2020-09-26.png)
 
@@ -124,11 +124,11 @@ def generate_about(preds=None):
 
     ![](/assets/retweet-actuals-v-preds-brighton-manu-2020-09-26-annotated.png)
 
-    The [__Engagement by Team__ page](/apps/by-team) shows us how the number of retweets has exceeded the xRetweets number on several occasions for games involving Brighton in the 2020/21 season.
+    The number of retweets has exceeded the xRetweets number on several occasions for games involving Brighton in the 2020/21 season. (Toggle the [__Engagement__ page](/apps/preds) to view by team.)
 
     ![](/assets/retweet-actuals-v-preds-by-team-brighton.png)
 
-    The [__Prediction Explanation__ page](/apps/shap) describes the factors that go into the xFavorite and xRetweet numbers for each tweet using [SHAP values](https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html). A positive SHAP value indicates that a given feature contributed to making the prediction greater than the average prediction across all tweets, and visa versa for a negative SHAP value.
+    The [__Breakdown__ page](/apps/shap) describes the factors that go into the xFavorite and xRetweet numbers for each tweet using [SHAP values](https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html). A positive SHAP value indicates that a given feature contributed to making the prediction greater than the average prediction across all tweets, and visa versa for a negative SHAP value.
 
     For the Brighton 2-3 Man United example, we can see that the "xG-Goal Difference" feature (relative difference in xG differential and goal differential) contributed most to the xRetweets number. In other words, the model factors in that "Brighton won the xG" and lost, yet the model still vastly under-estimated how many retweets eventually occurred.
 

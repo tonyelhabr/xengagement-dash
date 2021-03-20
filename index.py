@@ -4,7 +4,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 from app import app
-# from app import server
+from app import server
 
 from layouts import page_about, page_preds, page_shap, page_leaderboard
 import callbacks
@@ -13,7 +13,7 @@ app.layout = html.Div(
     [dcc.Location(id='url', refresh=False),
      html.Div(id='page-content')]
 )
-app.title = 'xEngagement'
+# app.title = 'xEngagement'
 
 @app.callback(
     dash.dependencies.Output('page-content', 'children'),
@@ -33,5 +33,5 @@ def display_page(pathname):
 
 
 if __name__ == '__main__':
-
+    app.title = 'xEngagement'
     app.run_server(debug=False)
